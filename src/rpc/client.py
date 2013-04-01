@@ -10,6 +10,8 @@ import traceback
 
 CLIENT_RPCID_GEN = iter(xrange(100000000))
 
+TIMEOUT = 5.0
+
 class ClientHandle(object):
   PENDING = 0
   SENT = 1
@@ -19,7 +21,7 @@ class ClientHandle(object):
   def done(self):
     return self.state >= ClientHandle.SUCCESS
 
-  def __init__(self, rpcid, deadline = 60.0):
+  def __init__(self, rpcid, timeout = TIMEOUT):
     self.rpcid = rpcid
     self.state = ClientHandle.PENDING
     self.start_time = time.time()
@@ -27,7 +29,8 @@ class ClientHandle(object):
     self.end_time = None
     self.result = None
     self.error = None
-    self.deadline = self.start_time + deadline
+    self.deadline = self.start_time + timeout
+    self.timeout = timeout
     self.finished_cv = threading.Condition()
 
   def __repr__(self):
@@ -80,7 +83,7 @@ class ClientConnection(BufferedConnection):
 #    logging.info('Write finished!')
     pass
 
-  def send(self, method, args, timeout = 60.0):
+  def send(self, method, args, timeout = TIMEOUT):
     logging.debug('Sending RPC %s', method)
     rpcid = CLIENT_RPCID_GEN.next()
     self.pending_rpcs[rpcid] = ClientHandle(rpcid, timeout)
@@ -100,8 +103,8 @@ class ClientConnection(BufferedConnection):
     handle = self.pending_rpcs[rpcid]
     with handle.finished_cv:
       if not handle.done():
-        handle.finished_cv.wait(handle.deadline)
-
+        handle.finished_cv.wait(handle.timeout)
+    
     if not handle.done():
       logging.warn('RPC %s (client %s, server %s:%d) timed out.',
                    handle.rpcid, socket.gethostname(), self.host, self.port)
@@ -157,19 +160,22 @@ class Future(object):
     self.sent = True
     handle = self.conn.wait_for_response(self.rpcid)
     result = handle.result
-    
-    # special case -- if the response only contains one argument, extract 
-    # the argument and return
-    if len(result) == 1: result = result[0]
+
+
 
     if handle.state != ClientHandle.SUCCESS:
       raise Exception('Call failed.')
-    
+
+    # special case -- if the response only contains one argument, extract 
+    # the argument and return
+    if len(result) == 1: result = result[0]
+        
     if isinstance(result, RemoteException):
       logging.error('Remote exception!\n: %s', result.formatted_tb)
       raise result.exception
-
+    
     self.result = result
+    
     return self.result
 
 class _MethodCall(object):
@@ -178,7 +184,7 @@ class _MethodCall(object):
       self.name = name
 
     def __call__(self, *args, **kw):
-      timeout = kw.get('timeout', 60)
+      timeout = kw.get('timeout', TIMEOUT)
       return Future(self.conn, self.conn.send(self.name, args, timeout = timeout))
 
 class RPCClient(object):
