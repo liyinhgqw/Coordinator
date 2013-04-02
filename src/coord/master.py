@@ -8,6 +8,7 @@ import time
 import logging
 import rpc.server
 import rpc.client
+import coord.common
 
 class Master(object):
   class MyHandler(object):
@@ -27,7 +28,7 @@ class Master(object):
   def __init__(self, port):
     self.logger = logging.getLogger("Master")
     self.logger.setLevel(logging.DEBUG)
-    self.rpc_server = rpc.server.RPCServer('localhost', int(port), handler=self.MyHandler(self))
+    self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), int(port), handler=self.MyHandler(self))
     self.rpc_client = {}
     
   def heartbeat(self):

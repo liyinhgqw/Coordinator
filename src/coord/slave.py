@@ -8,6 +8,7 @@ import socket
 import logging
 import rpc.server
 import rpc.client
+import coord.common
 
 class Slave(object):
   class MyHandler(object):
@@ -27,7 +28,7 @@ class Slave(object):
     self.logger = logging.getLogger("Slave")
     self.logger.setLevel(logging.DEBUG)
     self._port = port + 1   # slave server listen the port+1
-    self.rpc_server = rpc.server.RPCServer('localhost', self._port, handler=self.MyHandler(self))
+    self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
     
   def server_forever(self):
@@ -36,10 +37,10 @@ class Slave(object):
   
   def start(self):
     self.rpc_server.start()
-    register_slave_future = self.rpc_client.register_slave('127.0.0.1', int(self._port))
+    register_slave_future = self.rpc_client.register_slave(coord.common.localhost(), int(self._port))
     assert 1 == register_slave_future.wait()
 
-    self.logger.info("Registered slave %s:%d" % (socket.gethostname(), self._port))
+    self.logger.info("Registered slave %s:%d" % (coord.common.localhost(), self._port))
     
     self.running = True
     self.server_forever()
@@ -47,8 +48,8 @@ class Slave(object):
   def stop(self):
     ''' Cannot stop immediately '''
     self.running = False
-      
+    
 
 if __name__ == '__main__':
-  slave = Slave('localhost', 9999)
+  slave = Slave(coord.common.localhost(), 9999)
   slave.start()
