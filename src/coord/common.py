@@ -6,6 +6,9 @@ Created on Apr 2, 2013
 
 import socket
 
+MASTER_PORT = 9999
+SLAVE_PORT = MASTER_PORT + 1
+
 def _getsockname():
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   port = socket.getservbyname("http", "tcp")

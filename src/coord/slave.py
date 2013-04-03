@@ -9,6 +9,7 @@ import logging
 import rpc.server
 import rpc.client
 import coord.common
+import commands
 
 class Slave(object):
   class MyHandler(object):
@@ -21,8 +22,14 @@ class Slave(object):
     def foo(self, handle, arg1, arg2):
       handle.done(self.do_something(arg1, arg2))
       
+    # Called from master
     def heartbeat(self, handle):
       handle.done(True)
+      
+    # Called from client
+    def execute(self, handle, cmd):
+      status, out = commands.getstatusoutput(cmd)
+      handle.done((status, out))
     
   def __init__(self, host, port):
     self.logger = logging.getLogger("Slave")
@@ -51,5 +58,5 @@ class Slave(object):
     
 
 if __name__ == '__main__':
-  slave = Slave(coord.common.localhost(), 9999)
+  slave = Slave(coord.common.localhost(), coord.common.MASTER_PORT)
   slave.start()

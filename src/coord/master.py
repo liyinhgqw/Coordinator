@@ -6,10 +6,10 @@ Created on Apr 1, 2013
 
 import time
 import logging
+import coord.common
 import rpc.server
 import rpc.client
 from rpc.common import pickle, unpickle, RemoteException
-import coord.common
 import leveldb
 
 class Master(object):
@@ -24,12 +24,21 @@ class Master(object):
     def foo(self, handle, arg1, arg2):
       handle.done(self.do_something(arg1, arg2))
       
+    # Called from clients
     def register_job(self, handle, jobinfos):
       for jobname, jobinfo in jobinfos.iteritems():
         self.jobinfoDB.Put(jobname, pickle(jobinfo))
       print unpickle(self.jobinfoDB.Get(jobname))
       handle.done(1)
       
+    def lookup(self, handle, jobname):
+      try:
+        jobinfo_pickled = self.jobinfoDB.Get(jobname)
+        handle.done(unpickle(jobinfo_pickled))
+      except KeyError:
+        handle.done({})
+      
+    # Called from slaves
     def register_slave(self, handle, host, port):
       self.master.rpc_client[host] = rpc.client.RPCClient(host, int(port))
       handle.done(1)
@@ -77,6 +86,6 @@ class Master(object):
       
 
 if __name__ == '__main__':
-  master = Master(9999)
+  master = Master(coord.common.MASTER_PORT)
   master.start()
 
