@@ -31,7 +31,6 @@ class Client(object):
   def lookup(self, jobname):
     ret = self.rpc_client.lookup(jobname).wait()
     if isinstance(ret, dict):
-      print ret
       return ret
     else:
       raise Exception
@@ -39,7 +38,10 @@ class Client(object):
   def execute(self, jobname):
     jobinfo = self.lookup(jobname)
     exec_future = self._get_slave_rpc(jobinfo).execute(jobinfo['Command'])
-    print exec_future.wait()
+    return exec_future.wait()
+  
+  def getinfo(self, jobname, info):
+    return self.lookup(jobname)[info]
     
     
 
