@@ -8,12 +8,15 @@ import time
 import logging
 import rpc.server
 import rpc.client
+from rpc.common import pickle, unpickle, RemoteException
 import coord.common
+import leveldb
 
 class Master(object):
   class MyHandler(object):
     def __init__(self, master):
       self.master = master
+      self.jobinfoDB = self.master.db
       
     def do_something(self, arg1, arg2):
       return int(arg1) + int(arg2)
@@ -21,13 +24,21 @@ class Master(object):
     def foo(self, handle, arg1, arg2):
       handle.done(self.do_something(arg1, arg2))
       
+    def register_job(self, handle, jobinfos):
+      for jobname, jobinfo in jobinfos.iteritems():
+        self.jobinfoDB.Put(jobname, pickle(jobinfo))
+      print unpickle(self.jobinfoDB.Get(jobname))
+      handle.done(1)
+      
     def register_slave(self, handle, host, port):
       self.master.rpc_client[host] = rpc.client.RPCClient(host, int(port))
       handle.done(1)
+      
     
   def __init__(self, port):
     self.logger = logging.getLogger("Master")
     self.logger.setLevel(logging.DEBUG)
+    self.db = leveldb.LevelDB('jobinfo.db')
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), int(port), handler=self.MyHandler(self))
     self.rpc_client = {}
     

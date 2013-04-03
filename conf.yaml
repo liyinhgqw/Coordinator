@@ -1,0 +1,15 @@
+---
+Job1: 
+  Host: 127.0.0.1
+  InputPaths: [a, b]
+  OutputPaths: [c, d]
+  Command: ls
+
+---
+Job2:
+  Host: 127.0.0.2
+  InputPaths: [a1, b1]
+  OutputPaths: [c1, d1]
+  Command: open
+
+  
