@@ -46,7 +46,7 @@ class Client(object):
     
 
 if __name__ == '__main__':
-  client = Client('216.165.108.67:9999')
-  client.lookup('Job1')
-  client.lookup('Job4')
-  client.execute('Job1')
+  sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
+  print sockname
+  client = Client(sockname)
+  print client.lookup('Job1')

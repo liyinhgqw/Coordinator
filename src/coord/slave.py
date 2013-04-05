@@ -28,7 +28,9 @@ class Slave(object):
       
     # Called from master
     def register_job(self, handle, jobname, jobinfo):
-      self.jobmap[jobname] = jobinfo
+      self.slave.logger.info('register job')
+      self.slave.jobmap[jobname] = jobinfo
+      print jobname, jobinfo
       handle.done(1)
       
     # Called from client

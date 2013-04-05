@@ -1,13 +1,13 @@
 ---
 Job1: 
-  Host: 216.165.108.67 
+  Host: 10.0.2.15 
   InputPaths: [a, b]
   OutputPaths: [c, d]
   Command: ls
 
 ---
 Job2:
-  Host: 216.165.108.67 
+  Host: 10.0.2.15 
   InputPaths: [a1, b1]
   OutputPaths: [c1, d1]
   Command: open
