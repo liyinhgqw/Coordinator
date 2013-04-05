@@ -26,6 +26,11 @@ class Slave(object):
     def heartbeat(self, handle):
       handle.done(True)
       
+    # Called from jobconf (client end)
+    def register_job(self, handle, jobname, jobinfo):
+      self.jobmap[jobname] = jobinfo
+      handle.done(1)
+      
     # Called from client
     def execute(self, handle, cmd):
       status, out = commands.getstatusoutput(cmd)
@@ -37,6 +42,7 @@ class Slave(object):
     self._port = port + 1   # slave server listen the port+1
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
+    self.jobmap = {}
     
   def server_forever(self):
     while self.running:

@@ -24,10 +24,14 @@ class Master(object):
     def foo(self, handle, arg1, arg2):
       handle.done(self.do_something(arg1, arg2))
       
-    # Called from clients
+    # Called from jobconf (client end)
     def register_job(self, handle, jobinfos):
       for jobname, jobinfo in jobinfos.iteritems():
         self.jobinfoDB.Put(jobname, pickle(jobinfo))
+        slavehost = jobinfo['Host']
+        if self.rpc_client.has_key(slavehost):
+          self.rpc_client.register_job(jobname, jobinfo)
+          
       print unpickle(self.jobinfoDB.Get(jobname))
       handle.done(1)
       
