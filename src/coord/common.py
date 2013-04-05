@@ -23,37 +23,45 @@ def _getsockname():
 def localhost():
   return _getsockname()[0]
 
-def get_subdirs(dirname):
-  return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
-
-def get_unfinished_subdirs(dirname):
-  return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) and
-             not os.path.exists(os.path.join(dirname, sdir, FINISHED_TAG))]
+class LFS(object):
+  def __init__(self):
+    pass
   
-def get_subfiles(dirname):
-  return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
-
-def get_subdir_num(dirname):
-  return len(get_subdirs(dirname))
-
-def get_unfinished_subdir_num(dirname):
-  return len(get_unfinished_subdirs(dirname))
-
-def get_subfile_num(dirname):
-  return len(get_subfiles(dirname))
-
-# recursive
-def get_dir_size(dirname):
-  size = 0L
-  for root, dirs, files in os.walk(dirname):
-    size += sum([getsize(join(root, name)) for name in files])
-  return size
-
-# recursive
-def get_unfinished_dir_size(dirname):
-  size = 0L
-  for root, dirs, files in os.walk(dirname):
-    if not FINISHED_TAG in files: 
+  def get_subdirs(self, dirname):
+    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
+  
+  def get_unfinished_subdirs(self, dirname):
+    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) and
+               not os.path.exists(os.path.join(dirname, sdir, FINISHED_TAG))]
+    
+  def get_subfiles(self, dirname):
+    return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
+  
+  def get_subdir_num(self, dirname):
+    return len(self.get_subdirs(dirname))
+  
+  def get_unfinished_subdir_num(self, dirname):
+    return len(self.get_unfinished_subdirs(dirname))
+  
+  def get_subfile_num(self, dirname):
+    return len(self.get_subfiles(dirname))
+  
+  # recursive
+  def get_dir_size(self, dirname):
+    size = 0L
+    for root, dirs, files in os.walk(dirname):
       size += sum([getsize(join(root, name)) for name in files])
-  return size
+    return size
+  
+  # recursive
+  def get_unfinished_dir_size(self, dirname):
+    size = 0L
+    for root, dirs, files in os.walk(dirname):
+      if not FINISHED_TAG in files: 
+        size += sum([getsize(join(root, name)) for name in files])
+    return size
 
+class DFS(object):
+  def __init__(self):
+    pass
+  

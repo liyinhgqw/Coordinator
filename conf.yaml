@@ -1,15 +1,15 @@
 ---
 Job1: 
   Host: 10.0.2.15 
-  InputPaths: [a, b]
-  OutputPaths: [c, d]
+  Inputs: 
+    LFS: 
+      - I1 = /home/stud/workspace/Coordinator
+      - I2 = /home/stud/workspace/Coordinator/src 
+  Outputs: 
+    LFS: 
+      - e
+      - f
   Command: ls
 
----
-Job2:
-  Host: 10.0.2.15 
-  InputPaths: [a1, b1]
-  OutputPaths: [c1, d1]
-  Command: open
 
   
