@@ -195,6 +195,9 @@ class RPCClient(object):
 
   def __getattr__(self, key):
     return _MethodCall(self.conn, key)
+  
+  def call(self, key, *args, **kw):
+    return _MethodCall(self.conn, key)(*args, **kw)
 
   def close(self):
     del self.conn

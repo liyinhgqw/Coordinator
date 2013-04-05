@@ -43,13 +43,10 @@ class Master(object):
         handle.done({})
       
     def sync_jobinfo(self, host, port): 
-      print 'sync'
       for (jobname, jobinfo_pickled) in list(self.jobinfoDB.RangeIter(key_from=None, key_to=None)):
-        print jobname
         jobinfo = unpickle(jobinfo_pickled)
         slavehost = jobinfo['Host']
         if self.master.rpc_client.has_key(slavehost):
-          print 'jobinfo'
           self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
           
     # Called from slaves

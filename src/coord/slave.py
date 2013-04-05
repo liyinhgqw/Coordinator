@@ -4,7 +4,6 @@ Created on Apr 1, 2013
 @author: liyinhgqw
 '''
 import time
-import socket
 import logging
 import rpc.server
 import rpc.client
@@ -33,10 +32,18 @@ class Slave(object):
       print jobname, jobinfo
       handle.done(1)
       
+    def get_jobinfo(self, jobname):
+      if self.slave.jobmap.has_key(jobname):
+        return self.slave.jobmap[jobname]
+      else:
+        return None
+      
     # Called from client
-    def execute(self, handle, cmd):
-      status, out = commands.getstatusoutput(cmd)
-      handle.done((status, out))
+    def execute(self, handle, jobname):
+      jobinfo = self.get_jobinfo(jobname)
+      if jobinfo is not None:
+        status, out = commands.getstatusoutput(jobinfo['Command'])
+        handle.done((status, out))
     
   def __init__(self, host, port):
     self.logger = logging.getLogger("Slave")

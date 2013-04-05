@@ -24,7 +24,6 @@ class Client(object):
     host = jobinfo['Host']
     if not self.rpc_slave.has_key(host):
       self.rpc_slave[host] = rpc.client.RPCClient(host, coord.common.SLAVE_PORT)
-    print host, coord.common.SLAVE_PORT
     return self.rpc_slave[host]
     
   
@@ -34,11 +33,12 @@ class Client(object):
       return ret
     else:
       raise Exception
-
-  def execute(self, jobname):
+  
+  # Equavalent to client_rpc.func(jobname)
+  def call(self, func, jobname):
     jobinfo = self.lookup(jobname)
-    exec_future = self._get_slave_rpc(jobinfo).execute(jobinfo['Command'])
-    return exec_future.wait()
+    call_future = self._get_slave_rpc(jobinfo).call(func, jobname)
+    return call_future.wait()
   
   def getinfo(self, jobname, info):
     return self.lookup(jobname)[info]
@@ -47,6 +47,6 @@ class Client(object):
 
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
-  print sockname
   client = Client(sockname)
   print client.lookup('Job1')
+  print client.call('execute', 'Job1')
