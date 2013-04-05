@@ -26,7 +26,7 @@ class Slave(object):
     def heartbeat(self, handle):
       handle.done(True)
       
-    # Called from jobconf (client end)
+    # Called from master
     def register_job(self, handle, jobname, jobinfo):
       self.jobmap[jobname] = jobinfo
       handle.done(1)

@@ -30,7 +30,7 @@ class Master(object):
         self.jobinfoDB.Put(jobname, pickle(jobinfo))
         slavehost = jobinfo['Host']
         if self.rpc_client.has_key(slavehost):
-          self.rpc_client.register_job(jobname, jobinfo)
+          self.rpc_client[slavehost].register_job(jobname, jobinfo)
           
       print unpickle(self.jobinfoDB.Get(jobname))
       handle.done(1)
@@ -42,9 +42,17 @@ class Master(object):
       except KeyError:
         handle.done({})
       
+    def sync_jobinfo(self, host, port): 
+      for (jobname, jobinfo_pickled) in list(self.jobinfoDB.RangeIter(key_from=None, key_to=None)):
+        jobinfo = unpickle(jobinfo_pickled)
+        slavehost = jobinfo['Host']
+        if self.rpc_client.has_key(slavehost):
+          self.rpc_client[slavehost].register_job(jobname, jobinfo)
+          
     # Called from slaves
     def register_slave(self, handle, host, port):
       self.master.rpc_client[host] = rpc.client.RPCClient(host, int(port))
+      self.sync_jobinfo(host, int(port));
       handle.done(1)
       
     
