@@ -49,6 +49,7 @@ class Slave(object):
       
       
     def _execute(self, jobname):
+      status, out = '', ''
       jobinfo = self.get_jobinfo(jobname)
       if jobinfo is not None:
         status, out = commands.getstatusoutput(jobinfo['Command'])
@@ -65,19 +66,28 @@ class Slave(object):
       t = threading.Timer(coord.common.delay(timetpl), _execute)
       t.start()
       
-    def _period_execute(self, jobname, interval):
+    def _period_execute(self, jobname, interval, check_finished = False):
       if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
         self._stopjob[jobname] = False
       else:
+        if not check_finished or self._checknclear_finished(jobname):
+          ret = self._execute(jobname)
+          print 'do period execute.', ret
+        _period_execute = partial(self._period_execute, jobname, interval)
+        t = threading.Timer(interval, _period_execute)
+        t.start()
+      
+    def period_execute(self, handle, jobname, interval, check_finished = False):
+      if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
+        self._stopjob[jobname] = False
+      else:
+        # do not check finished for the first round
         ret = self._execute(jobname)
         print 'do period execute.', ret
         _period_execute = partial(self._period_execute, jobname, interval)
         t = threading.Timer(interval, _period_execute)
         t.start()
-      
-    def period_execute(self, handle, jobname, interval):
       handle.done(True)
-      self._period_execute(jobname, interval)
       
     def stop_period_execute(self, handle, jobname):
       self._stopjob[jobname] = True
@@ -211,7 +221,8 @@ class Slave(object):
       lfs = coord.common.LFS()
       finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
                                          coord.common.FINISHED_TAG))
-      os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+      if finished:
+        os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
                                          coord.common.FINISHED_TAG))
       return finished
     
