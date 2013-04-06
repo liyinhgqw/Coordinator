@@ -40,18 +40,19 @@ class Client(object):
     return self.lookup(jobname)[info]
   
   # Equavalent to client_rpc.func(jobname)
-  def call(self, func, jobname):
+  def call(self, func, jobname, *args, **kw):
     jobinfo = self.lookup(jobname)
-    call_future = self._get_slave_rpc(jobinfo).call(func, jobname)
+    call_future = self._get_slave_rpc(jobinfo).call(func, jobname, *args, **kw)
     return call_future.wait()
   
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
   client = Client(sockname)
-  print client.lookup('Job1')
-  print client.call('execute', 'Job1')
-  print client.call('get_input_size', 'Job1')
-  print client.call('get_input_totalsize', 'Job1')
-  print client.call('get_input_subdirnum', 'Job1')
+#  print client.lookup('Job1')
+#  print client.call('execute', 'Job1')
+#  print client.call('get_input_size', 'Job1')
+#  print client.call('get_input_totalsize', 'Job1')
+#  print client.call('get_input_subdirnum', 'Job1')
   print client.call('get_input_subdirtotalnum', 'Job1')
-  
+#  client.call('period_execute', 'Job1', 5.0)  
+  client.call('delay_execute', 'Job1', (2013, 4, 6, 14, 30, 0))

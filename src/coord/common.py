@@ -71,12 +71,12 @@ class DFS(object):
   def __init__(self):
     pass
   
-def gettime(self, timetpl):
-  time.mktime(datetime.datetime(timetpl).timetuple()) 
+def gettime(timetpl):
+  return time.mktime(datetime.datetime(*timetpl).timetuple()) 
     
-def curtime(self):
-  time.time()
+def curtime():
+  return time.time()
     
-def delay(self, timetpl):
-  return curtime() - gettime(timetpl)
+def delay(timetpl):
+  return gettime(timetpl) - curtime()
   

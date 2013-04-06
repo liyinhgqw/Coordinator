@@ -17,6 +17,7 @@ class Slave(object):
   class MyHandler(object):
     def __init__(self, slave):
       self.slave = slave
+      self._stopjob = {}
       
     def do_something(self, arg1, arg2):
       return int(arg1) + int(arg2)
@@ -51,15 +52,35 @@ class Slave(object):
       jobinfo = self.get_jobinfo(jobname)
       if jobinfo is not None:
         status, out = commands.getstatusoutput(jobinfo['Command'])
+      print out
       return (status, out)
       
     def execute(self, handle, jobname):
       handle.done(self._execute(jobname))
       
     def delay_execute(self, handle, jobname, timetpl):
-      execute = partial(self.execute, jobname)
-      t = threading.Timer(coord.common.delay(timetpl), execute)
+      handle.done(True)
+      _execute = partial(self._execute, jobname)
+      print 'interval', coord.common.delay(timetpl)
+      t = threading.Timer(coord.common.delay(timetpl), _execute)
       t.start()
+      
+    def _period_execute(self, jobname, interval):
+      if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
+        self._stopjob[jobname] = False
+      else:
+        ret = self._execute(jobname)
+        print 'do period execute.', ret
+        _period_execute = partial(self._period_execute, jobname, interval)
+        t = threading.Timer(interval, _period_execute)
+        t.start()
+      
+    def period_execute(self, handle, jobname, interval):
+      handle.done(True)
+      self._period_execute(jobname, interval)
+      
+    def stop_period_execute(self, handle, jobname):
+      self._stopjob[jobname] = True
       
     def _get_input_size(self, jobname):
       ret = {}
