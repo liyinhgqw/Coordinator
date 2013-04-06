@@ -9,6 +9,7 @@ import rpc.server
 import rpc.client
 import coord.common
 import commands
+import os
 
 class Slave(object):
   class MyHandler(object):
@@ -166,6 +167,22 @@ class Slave(object):
     def get_unfinished_input_subdirtotalnum(self, handle, jobname):
       handle.done(self._get_unfinished_input_subdirtotalnum(jobname))
       
+    def _check_finished(self, jobname):
+      return os.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+                                         coord.common.FINISHED_TAG))
+    
+    def check_finished(self, handle, jobname):
+      handle.done(self._check_finished(jobname))
+    
+    def _checknclear_finished(self, jobname):
+      finished = os.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+                                         coord.common.FINISHED_TAG))
+      os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+                                         coord.common.FINISHED_TAG))
+      return finished
+    
+    def checknclear_finished(self, handle, jobname):
+      handle.done(self._checknclear_finished(jobname))
     
   def __init__(self, host, port):
     self.logger = logging.getLogger("Slave")
@@ -174,6 +191,8 @@ class Slave(object):
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
+    if (not os.path.exists(coord.common.SLAVE_META_PATH)):
+      os.mkdir(coord.common.SLAVE_META_PATH)
     
   def server_forever(self):
     while self.running:

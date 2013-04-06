@@ -11,6 +11,7 @@ from os.path import join, getsize
 MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
 FINISHED_TAG = 'FINISHED'
+SLAVE_META_PATH = '/tmp/coord'
 
 def _getsockname():
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
