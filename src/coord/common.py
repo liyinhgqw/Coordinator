@@ -6,6 +6,7 @@ Created on Apr 2, 2013
 
 import os
 import socket
+import time, datetime
 from os.path import join, getsize
 
 MASTER_PORT = 9999
@@ -64,8 +65,18 @@ class LFS(object):
   
   def exists(self, pathname):
     return os.path.exists(pathname)
-
+  
+  
 class DFS(object):
   def __init__(self):
     pass
+  
+def gettime(self, timetpl):
+  time.mktime(datetime.datetime(timetpl).timetuple()) 
+    
+def curtime(self):
+  time.time()
+    
+def delay(self, timetpl):
+  return curtime() - gettime(timetpl)
   

@@ -10,6 +10,8 @@ import rpc.client
 import coord.common
 import commands
 import os
+import threading
+from functools import partial
 
 class Slave(object):
   class MyHandler(object):
@@ -44,11 +46,20 @@ class Slave(object):
       status, out = commands.getstatusoutput(cmdstr)
       handle.done((status, out))
       
-    def execute(self, handle, jobname):
+      
+    def _execute(self, jobname):
       jobinfo = self.get_jobinfo(jobname)
       if jobinfo is not None:
         status, out = commands.getstatusoutput(jobinfo['Command'])
-      handle.done((status, out))
+      return (status, out)
+      
+    def execute(self, handle, jobname):
+      handle.done(self._execute(jobname))
+      
+    def delay_execute(self, handle, jobname, timetpl):
+      execute = partial(self.execute, jobname)
+      t = threading.Timer(coord.common.delay(timetpl), execute)
+      t.start()
       
     def _get_input_size(self, jobname):
       ret = {}
