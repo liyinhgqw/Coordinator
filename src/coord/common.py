@@ -61,6 +61,9 @@ class LFS(object):
       if not FINISHED_TAG in files: 
         size += sum([getsize(join(root, name)) for name in files])
     return size
+  
+  def exists(self, pathname):
+    return os.path.exists(pathname)
 
 class DFS(object):
   def __init__(self):

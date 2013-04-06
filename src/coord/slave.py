@@ -168,14 +168,16 @@ class Slave(object):
       handle.done(self._get_unfinished_input_subdirtotalnum(jobname))
       
     def _check_finished(self, jobname):
-      return os.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+      lfs = coord.common.LFS()
+      return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
                                          coord.common.FINISHED_TAG))
     
     def check_finished(self, handle, jobname):
       handle.done(self._check_finished(jobname))
     
     def _checknclear_finished(self, jobname):
-      finished = os.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+      lfs = coord.common.LFS()
+      finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
                                          coord.common.FINISHED_TAG))
       os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
                                          coord.common.FINISHED_TAG))
