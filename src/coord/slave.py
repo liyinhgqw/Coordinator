@@ -12,6 +12,7 @@ import commands
 import os
 import threading
 from functools import partial
+from coord.jobstat import JobStat
 
 class Slave(object):
   class MyHandler(object):
@@ -33,6 +34,7 @@ class Slave(object):
     def register_job(self, handle, jobname, jobinfo):
       self.slave.logger.info('register job')
       self.slave.jobmap[jobname] = jobinfo
+      self.slave.jobstats[jobname] = JobStat(jobname, 1.0, self.slave)
       print jobname, jobinfo
       handle.done(1)
       
@@ -49,10 +51,12 @@ class Slave(object):
       
       
     def _execute(self, jobname):
-      status, out = '', ''
+      status, out = -1, ''
       jobinfo = self.get_jobinfo(jobname)
       if jobinfo is not None:
         status, out = commands.getstatusoutput(jobinfo['Command'])
+        if status == 0:
+          self.slave.jobstats[jobname].start()
       print out
       return (status, out)
       
@@ -236,6 +240,7 @@ class Slave(object):
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
+    self.jobstats = {}
     if (not os.path.exists(coord.common.SLAVE_META_PATH)):
       os.mkdir(coord.common.SLAVE_META_PATH)
     
