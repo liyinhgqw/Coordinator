@@ -55,4 +55,4 @@ if __name__ == '__main__':
 #  print client.call('get_input_subdirnum', 'Job1')
   print client.call('get_input_subdirtotalnum', 'Job1')
 #  client.call('period_execute', 'Job1', 5.0)  
-  client.call('delay_execute', 'Job1', (2013, 4, 6, 14, 30, 0))
+  client.call('execute', 'Job1')

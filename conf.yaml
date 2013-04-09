@@ -3,13 +3,11 @@ Job1:
   Host: 10.0.2.15 
   Inputs: 
     LFS: 
-      - I1 = /home/stud/workspace/Coordinator
-      - I2 = /home/stud/workspace/Coordinator/src 
+      - I = /home/stud/workspace/Coordinator/test/in
   Outputs: 
     LFS: 
-      - e
-      - f
-  Command: ls
+      - O = /home/stud/workspace/Coordinator/test/out
+  Command: python /home/stud/workspace/Coordinator/test/testjob.py 
 
 
   
