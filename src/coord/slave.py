@@ -33,38 +33,36 @@ class Slave(object):
       handle.done(1)
       
     # Called from client
-    def cmd(self, handle, cmdstr):
+    def cmd(self, handle, jobname, cmdstr):
       status, out = commands.getstatusoutput(cmdstr)
       handle.done((status, out))
       
       
-    def execute(self, handle, jobname):
+    def execute(self, handle, jobname, check_finished=True):
       handle.done(True)
-      self.slave.execute_wo(jobname)
+      self.slave.execute_wo(jobname, check_finished)
       
-    def delay_execute(self, handle, jobname, timetpl):
+    def delay_execute(self, handle, jobname, timetpl, check_finished=True):
       handle.done(True)
-      _execute = partial(self.slave.execute_wo, jobname)
+      _execute = partial(self.slave.execute_wo, jobname, check_finished)
       print 'interval', coord.common.delay(timetpl)
       t = threading.Timer(coord.common.delay(timetpl), _execute)
       t.start()
       
-    def period_execute(self, handle, jobname, interval, check_finished=False):
-      if self.slave._stopjob.has_key(jobname) and self.slave._stopjob[jobname] == True:
-        self.slave._stopjob[jobname] = False
-      else:
-        # do not check finished for the first round
-        ret = self.slave.execute_wo(jobname)
-        print 'do period execute.', ret
-        _period_execute = partial(self.slave.period_execute_wo, jobname, interval)
-        t = threading.Timer(interval, _period_execute)
-        t.start()
+    def period_execute(self, handle, jobname, interval=1.0, check_finished=True):
+      self.slave._stopjob[jobname] = False
+      # do not check finished for the first round
+      ret = self.slave.execute_wo(jobname)
+      print 'do period execute.', ret
+      _period_execute = partial(self.slave.period_execute_wo, jobname, interval, check_finished)
+      t = threading.Timer(interval, _period_execute)
+      t.start()
       handle.done(True)
       
     def stop_period_execute(self, handle, jobname):
       self.slave._stopjob[jobname] = True
       handle.done(True)
-      
+    
     # input
     def get_input_size(self, handle, jobname):
       handle.done(self.slave.get_input_size_wo(jobname))
@@ -168,26 +166,28 @@ class Slave(object):
     else:
       return None
     
-  def execute_wo(self, jobname):
+  def execute_wo(self, jobname, check_finished=True):
     status, out = -1, ''
     jobinfo = self.get_jobinfo(jobname)
     if jobinfo is not None:
-      status, out = commands.getstatusoutput(jobinfo['Command'])
-      if status == 0:
-        self.jobstats[jobname].start()
+      if not check_finished or self.check_finished_wo(jobname):   # only clean finish tag in jobstat
+        status, out = commands.getstatusoutput(jobinfo['Command'])
+        if status == 0:
+          self.jobstats[jobname].start()                            # start if the job is really launched
     print out
     return (status, out)
     
-  def period_execute_wo(self, jobname, interval, check_finished=False):
+  def period_execute_wo(self, jobname, interval, check_finished=True):
     if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
       self._stopjob[jobname] = False
     else:
-      if not check_finished or self.checknclear_finished_wo(jobname):
-        ret = self.execute_wo(jobname)
-        print 'do period execute.', ret
+      ret = self.execute_wo(jobname, check_finished)
+      print 'do period execute.', ret
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()
+
+
 
   # Input Stats        
   def get_input_size_wo(self, jobname):
