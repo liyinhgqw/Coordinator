@@ -65,6 +65,7 @@ class Slave(object):
       self.slave._stopjob[jobname] = True
       handle.done(True)
       
+    # input
     def get_input_size(self, handle, jobname):
       handle.done(self.slave.get_input_size_wo(jobname))
       
@@ -89,14 +90,47 @@ class Slave(object):
     def get_unfinished_input_subdirtotalnum(self, handle, jobname):
       handle.done(self.slave.get_unfinished_input_subdirtotalnum_wo(jobname))
 
+    # output
+    def get_output_size(self, handle, jobname):
+      handle.done(self.slave.get_output_size_wo(jobname))
+      
+    def get_output_totalsize(self, handle, jobname):
+      handle.done(self.slave.get_output_totalsize_wo(jobname))
+      
+    def get_output_subdirnum(self, handle, jobname):
+      handle.done(self.slave.get_output_subdirnum_wo(jobname))
+      
+    def get_output_subdirtotalnum(self, handle, jobname):
+      handle.done(self.slave.get_output_subdirtotalnum_wo(jobname))
+      
+    def get_unfinished_output_size(self, handle, jobname, depjob):
+      handle.done(self.slave.get_unfinished_output_size_wo(jobname, depjob))
+      
+    def get_unfinished_output_totalsize(self, handle, jobname, depjob):
+      handle.done(self.slave.get_unfinished_output_totalsize_wo(jobname, depjob))
+    
+    def get_unfinished_output_subdirnum(self, handle, jobname, depjob):
+      handle.done(self.slave.get_unfinished_output_subdirnum_wo(jobname, depjob))
+      
+    def get_unfinished_output_subdirtotalnum(self, handle, jobname, depjob):
+      handle.done(self.slave.get_unfinished_output_subdirtotalnum_wo(jobname, depjob))
+
+    # job finish
     def check_finished(self, handle, jobname):
       handle.done(self.slave.check_finished_wo(jobname))
     
     def checknclear_finished(self, handle, jobname):
       handle.done(self.slave.checknclear_finished_wo(jobname))
     
+    def has_input(self, handle, jobname, threshold = 1000000):
+      handle.done(self.slave.get_unfinished_input_size_wo(jobname) > threshold)
+      
+    def has_output(self, handle, jobname, depjob, threshold = 1000000):
+      handle.done(self.slave.get_unfinished_output_size_wo(jobname, depjob) > threshold)
     
-    
+
+
+
     
   def __init__(self, host, port):
     self.logger = logging.getLogger("Slave")
@@ -154,7 +188,8 @@ class Slave(object):
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()
-        
+
+  # Input Stats        
   def get_input_size_wo(self, jobname):
     ret = {}
     jobinfo = self.get_jobinfo(jobname)
@@ -211,14 +246,14 @@ class Slave(object):
           alias, ldirpath = ldir.split('=')
           alias = alias.strip()
           ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_dir_size(ldirpath)
+          ret[alias] = lfs.get_unfinished_dir_size(ldirpath, jobname)
       if jobinfo['Inputs'].has_key('DFS'):
         dfs = coord.common.DFS()
         for ddir in jobinfo['Inputs']['DFS']:
           alias, ddirpath = ddir.split('=')
           alias = alias.strip()
           ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_dir_size(ddirpath)
+          ret[alias] = dfs.get_unfinished_dir_size(ddirpath, jobname)
     return ret
   
   def get_unfinished_input_totalsize_wo(self, jobname):
@@ -234,30 +269,124 @@ class Slave(object):
           alias, ldirpath = ldir.split('=')
           alias = alias.strip()
           ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_subdir_num(ldirpath)
+          ret[alias] = lfs.get_unfinished_subdir_num(ldirpath, jobname)
       if jobinfo['Inputs'].has_key('DFS'):
         dfs = coord.common.DFS()
         for ddir in jobinfo['Inputs']['DFS']:
           alias, ddirpath = ddir.split('=')
           alias = alias.strip()
           ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_subdir_num(ddirpath)
+          ret[alias] = dfs.get_unfinished_subdir_num(ddirpath, jobname)
     return ret
   
   def get_unfinished_input_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_unfinished_input_subdirnum_wo(jobname).iteritems()])
-       
+
+  # Output Stats        
+  def get_output_size_wo(self, jobname):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_dir_size(ldirpath)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_dir_size(ddirpath)
+    return ret        
+  
+  def get_output_totalsize_wo(self, jobname):
+    return sum([dirsize for _, dirsize in self.get_output_size_wo(jobname).iteritems()])
+
+  def get_output_subdirnum_wo(self, jobname):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_subdir_num(ldirpath)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_subdir_num(ddirpath)
+    return ret
+
+  def get_output_subdirtotalnum_wo(self, jobname):
+    return sum([dirnum for _, dirnum in self.get_output_subdirnum_wo(jobname).iteritems()])
+        
+  def get_unfinished_output_size_wo(self, jobname, depjob):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_unfinished_dir_size(ldirpath, depjob)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_unfinished_dir_size(ddirpath, depjob)
+    return ret
+  
+  def get_unfinished_output_totalsize_wo(self, jobname, depjob):
+    return sum([dirsize for _, dirsize in self.get_unfinished_output_size_wo(jobname, depjob).iteritems()])
+      
+  def get_unfinished_output_subdirnum_wo(self, jobname, depjob):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_unfinished_subdir_num(ldirpath, depjob)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_unfinished_subdir_num(ddirpath, depjob)
+    return ret
+  
+  def get_unfinished_output_subdirtotalnum_wo(self, jobname, depjob):
+    return sum([dirnum for _, dirnum in self.get_unfinished_output_subdirnum_wo(jobname, depjob).iteritems()])
+
+  # job finish
   def check_finished_wo(self, jobname):
     lfs = coord.common.LFS()
-    return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+    return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                          coord.common.FINISHED_TAG))
            
   def checknclear_finished_wo(self, jobname):
     lfs = coord.common.LFS()
-    finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+    finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     if finished:
-      os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + '_' + 
+      os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     return finished
   

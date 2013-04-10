@@ -11,7 +11,7 @@ from os.path import join, getsize
 
 MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
-FINISHED_TAG = 'FINISHED'
+FINISHED_TAG = '_FINISHED'
 SLAVE_META_PATH = '/tmp/coord'
 
 def _getsockname():
@@ -32,9 +32,9 @@ class LFS(object):
   def get_subdirs(self, dirname):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
   
-  def get_unfinished_subdirs(self, dirname):
+  def get_unfinished_subdirs(self, dirname, jobname = ''):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) and
-               not os.path.exists(os.path.join(dirname, sdir, FINISHED_TAG))]
+               not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_subfiles(self, dirname):
     return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
@@ -42,8 +42,8 @@ class LFS(object):
   def get_subdir_num(self, dirname):
     return len(self.get_subdirs(dirname))
   
-  def get_unfinished_subdir_num(self, dirname):
-    return len(self.get_unfinished_subdirs(dirname))
+  def get_unfinished_subdir_num(self, dirname, jobname = ''):
+    return len(self.get_unfinished_subdirs(dirname, jobname))
   
   def get_subfile_num(self, dirname):
     return len(self.get_subfiles(dirname))
@@ -56,10 +56,10 @@ class LFS(object):
     return size
   
   # recursive
-  def get_unfinished_dir_size(self, dirname):
+  def get_unfinished_dir_size(self, dirname, jobname = ''):
     size = 0L
     for root, dirs, files in os.walk(dirname):
-      if not FINISHED_TAG in files: 
+      if not (jobname + FINISHED_TAG) in files: 
         size += sum([getsize(join(root, name)) for name in files])
     return size
   

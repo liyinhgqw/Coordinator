@@ -58,7 +58,8 @@ class JobStat(object):
   def update_backuprate(self):
     # for backuprate
       cur_backup = self.slave.get_unfinished_input_totalsize_wo(self.jobname)
-      self.backuprate = cur_backup - self._backup
+      if cur_backup - self._backup > self.backuprate:
+        self.backuprate = cur_backup - self._backup
     
   def update(self):
     if self.slave.checknclear_finished_wo(self.jobname):
