@@ -59,7 +59,7 @@ class LFS(object):
   def get_unfinished_dir_size(self, dirname, jobname = ''):
     size = 0L
     for root, dirs, files in os.walk(dirname):
-      if not (jobname + FINISHED_TAG) in files: 
+      if not (jobname + FINISHED_TAG) in dirs: 
         size += sum([getsize(join(root, name)) for name in files])
     return size
   

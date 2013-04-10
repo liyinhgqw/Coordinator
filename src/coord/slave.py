@@ -386,7 +386,7 @@ class Slave(object):
     finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     if finished:
-      os.remove(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+      os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     return finished
   
