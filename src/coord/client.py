@@ -62,7 +62,7 @@ class Client(object):
   
   # diverse convenient execute funtion
   def execute_cond(self, jobname, cond, *args, **kw):
-    if cond:
+    if cond(jobname):
       self.call('execute', jobname, *args, **kw)
   
   def execute_period(self, jobname, interval=1.0, *args, **kw):
@@ -77,7 +77,7 @@ class Client(object):
     _period_execute = partial(self.execute_period_cond, jobname, cond, interval, *args, **kw)
     t = threading.Timer(interval, _period_execute)
     t.start()
-  
+    
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
   client = Client(sockname)

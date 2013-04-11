@@ -88,6 +88,18 @@ class Slave(object):
     def get_unfinished_input_subdirtotalnum(self, handle, jobname):
       handle.done(self.slave.get_unfinished_input_subdirtotalnum_wo(jobname))
 
+    def get_buffered_input_size(self, handle, jobname):
+      handle.done(self.slave.get_buffered_input_size_wo(jobname))
+      
+    def get_buffered_input_totalsize(self, handle, jobname):
+      handle.done(self.slave.get_buffered_input_totalsize_wo(jobname))
+    
+    def get_buffered_input_subdirnum(self, handle, jobname):
+      handle.done(self.slave.get_buffered_input_subdirnum_wo(jobname))
+      
+    def get_buffered_input_subdirtotalnum(self, handle, jobname):
+      handle.done(self.slave.get_buffered_input_subdirtotalnum_wo(jobname))
+
     # output
     def get_output_size(self, handle, jobname):
       handle.done(self.slave.get_output_size_wo(jobname))
@@ -113,6 +125,18 @@ class Slave(object):
     def get_unfinished_output_subdirtotalnum(self, handle, jobname, depjob):
       handle.done(self.slave.get_unfinished_output_subdirtotalnum_wo(jobname, depjob))
 
+    def get_buffered_output_size(self, handle, jobname, depjob):
+      handle.done(self.slave.get_buffered_output_size_wo(jobname, depjob))
+      
+    def get_buffered_output_totalsize(self, handle, jobname, depjob):
+      handle.done(self.slave.get_buffered_output_totalsize_wo(jobname, depjob))
+    
+    def get_buffered_output_subdirnum(self, handle, jobname, depjob):
+      handle.done(self.slave.get_buffered_output_subdirnum_wo(jobname, depjob))
+      
+    def get_buffered_output_subdirtotalnum(self, handle, jobname, depjob):
+      handle.done(self.slave.get_buffered_output_subdirtotalnum_wo(jobname, depjob))
+      
     # job finish
     def check_finished(self, handle, jobname):
       handle.done(self.slave.check_finished_wo(jobname))
@@ -126,6 +150,9 @@ class Slave(object):
     def has_output(self, handle, jobname, depjob, threshold = 1000000):
       handle.done(self.slave.get_unfinished_output_size_wo(jobname, depjob) > threshold)
     
+    def get_stat(self, handle, jobname, stat):
+      handle.done(self.slave.get_stat_wo(jobname, stat))
+
 
 
 
@@ -282,6 +309,53 @@ class Slave(object):
   def get_unfinished_input_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_unfinished_input_subdirnum_wo(jobname).iteritems()])
 
+  def get_buffered_input_size_wo(self, jobname):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Inputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Inputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_buffered_dir_size(ldirpath, jobname)
+      if jobinfo['Inputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Inputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_buffered_dir_size(ddirpath, jobname)
+    return ret
+  
+  def get_buffered_input_totalsize_wo(self, jobname):
+    return sum([dirsize for _, dirsize in self.get_buffered_input_size_wo(jobname).iteritems()])
+      
+  def get_buffered_input_subdirnum_wo(self, jobname):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Inputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Inputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_buffered_subdir_num(ldirpath, jobname)
+      if jobinfo['Inputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Inputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_buffered_subdir_num(ddirpath, jobname)
+    return ret
+  
+  def get_buffered_input_subdirtotalnum_wo(self, jobname):
+    return sum([dirnum for _, dirnum in self.get_buffered_input_subdirnum_wo(jobname).iteritems()])
+
+
   # Output Stats        
   def get_output_size_wo(self, jobname):
     ret = {}
@@ -375,6 +449,52 @@ class Slave(object):
   def get_unfinished_output_subdirtotalnum_wo(self, jobname, depjob):
     return sum([dirnum for _, dirnum in self.get_unfinished_output_subdirnum_wo(jobname, depjob).iteritems()])
 
+  def get_buffered_output_size_wo(self, jobname, depjob):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_buffered_dir_size(ldirpath, depjob)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_buffered_dir_size(ddirpath, depjob)
+    return ret
+  
+  def get_buffered_output_totalsize_wo(self, jobname, depjob):
+    return sum([dirsize for _, dirsize in self.get_buffered_output_size_wo(jobname, depjob).iteritems()])
+      
+  def get_buffered_output_subdirnum_wo(self, jobname, depjob):
+    ret = {}
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is not None:
+      if jobinfo['Outputs'].has_key('LFS'):
+        lfs = coord.common.LFS()
+        for ldir in jobinfo['Outputs']['LFS']:
+          alias, ldirpath = ldir.split('=')
+          alias = alias.strip()
+          ldirpath = ldirpath.strip()
+          ret[alias] = lfs.get_buffered_subdir_num(ldirpath, depjob)
+      if jobinfo['Outputs'].has_key('DFS'):
+        dfs = coord.common.DFS()
+        for ddir in jobinfo['Outputs']['DFS']:
+          alias, ddirpath = ddir.split('=')
+          alias = alias.strip()
+          ddirpath = ddirpath.strip()
+          ret[alias] = dfs.get_buffered_subdir_num(ddirpath, depjob)
+    return ret
+  
+  def get_buffered_output_subdirtotalnum_wo(self, jobname, depjob):
+    return sum([dirnum for _, dirnum in self.get_buffered_output_subdirnum_wo(jobname, depjob).iteritems()])
+
   # job finish
   def check_finished_wo(self, jobname):
     lfs = coord.common.LFS()
@@ -389,6 +509,10 @@ class Slave(object):
       os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     return finished
+  
+  def get_stat_wo(self, jobname, stat):
+    if self.jobstats.has_key(jobname):
+      return self.jobstats[jobname].get_stat(stat)
   
 if __name__ == '__main__':
   slave = Slave(coord.common.localhost(), coord.common.MASTER_PORT)

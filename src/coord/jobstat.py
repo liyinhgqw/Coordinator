@@ -77,6 +77,8 @@ class JobStat(object):
     t = threading.Timer(self.interval, self.update)
     t.start()
     
+  def get_stat(self, stat):
+    return self.__dict__[stat]
     
     
     

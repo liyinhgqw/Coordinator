@@ -3,7 +3,7 @@ import rpc.server
 
 class MyHandler(object):
   def do_something(self, arg1, arg2):
-    return int(arg1) + int(arg2)
+    pass
   
   def foo(self, handle, arg1, arg2):
     handle.done(self.do_something(arg1, arg2))
