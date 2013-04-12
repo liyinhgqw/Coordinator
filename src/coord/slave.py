@@ -505,7 +505,8 @@ class Slave(object):
     lfs = coord.common.LFS()
     finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
-    if finished:
+    if finished and lfs.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                       coord.common.FINISHED_TAG)):
       os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG))
     return finished
