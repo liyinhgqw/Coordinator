@@ -63,6 +63,7 @@ class Client(object):
   # diverse convenient execute funtion
   def execute_cond(self, jobname, cond, *args, **kw):
     if cond(jobname):
+      print 'exec'
       self.call('execute', jobname, *args, **kw)
   
   def execute_period(self, jobname, interval=1.0, *args, **kw):

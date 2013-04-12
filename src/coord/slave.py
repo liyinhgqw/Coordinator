@@ -9,7 +9,6 @@ import rpc.server
 import rpc.client
 import coord.common
 import coord.jobstat 
-import commands
 import os
 import threading
 from functools import partial
@@ -34,8 +33,8 @@ class Slave(object):
       
     # Called from client
     def cmd(self, handle, jobname, cmdstr):
-      status, out = commands.getstatusoutput(cmdstr)
-      handle.done((status, out))
+      status = os.system(cmdstr + " &")
+      handle.done(status)
       
       
     def execute(self, handle, jobname, check_finished=True):
@@ -194,15 +193,18 @@ class Slave(object):
       return None
     
   def execute_wo(self, jobname, check_finished=True):
-    status, out = -1, ''
+    print 'execute:', jobname
+    status = -1
     jobinfo = self.get_jobinfo(jobname)
     if jobinfo is not None:
+      print '==', check_finished, self.check_finished_wo(jobname)
+      print jobinfo
+      print jobinfo['Command']
       if not check_finished or self.check_finished_wo(jobname):   # only clean finish tag in jobstat
-        status, out = commands.getstatusoutput(jobinfo['Command'])
+        status = os.system(jobinfo['Command'] + " &")
         if status == 0:
           self.jobstats[jobname].start()                            # start if the job is really launched
-    print out
-    return (status, out)
+    return status
     
   def period_execute_wo(self, jobname, interval, check_finished=True):
     if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:

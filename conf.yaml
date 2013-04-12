@@ -7,7 +7,9 @@ Job1:
   Outputs: 
     LFS: 
       - O = /home/stud/workspace/Coordinator/test/out
-  Command: python /home/stud/workspace/Coordinator/test/testjob.py 
+  Command: python /home/stud/workspace/Coordinator/test/mockjob.py -n 'Job1' -i '/home/stud/workspace/Coordinator/test/in' -o '/home/stud/workspace/Coordinator/test/out' -b 
+
+
 
 
   
