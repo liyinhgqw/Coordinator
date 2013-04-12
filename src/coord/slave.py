@@ -200,9 +200,11 @@ class Slave(object):
       print '==', check_finished, self.check_finished_wo(jobname)
       print jobinfo
       print jobinfo['Command']
-      if not check_finished or self.check_finished_wo(jobname):   # only clean finish tag in jobstat
+      if not check_finished or self.check_newround(jobname):   # only clean finish tag in jobstat
         status = os.system(jobinfo['Command'] + " &")
         if status == 0:
+          os.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                         coord.common.STARTED_TAG)) # mark start tag
           self.jobstats[jobname].start()                            # start if the job is really launched
     return status
     
@@ -501,16 +503,26 @@ class Slave(object):
   def check_finished_wo(self, jobname):
     lfs = coord.common.LFS()
     return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.FINISHED_TAG))
-           
+                                         coord.common.FINISHED_TAG)) or not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                         coord.common.STARTED_TAG))
+  
+  def check_newround(self, jobname):
+    lfs = coord.common.LFS()
+    return not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                         coord.common.FINISHED_TAG)) and not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                         coord.common.STARTED_TAG))    
+    
   def checknclear_finished_wo(self, jobname):
     lfs = coord.common.LFS()
-    finished = lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                       coord.common.FINISHED_TAG))
-    if finished and lfs.path.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+    finished = self.check_finished_wo(jobname)
+    if finished:
+      print '************************************************'
+      if lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.FINISHED_TAG)):
-      os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                       coord.common.FINISHED_TAG))
+        os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.FINISHED_TAG))
+      if lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                       coord.common.STARTED_TAG)):
+        os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.STARTED_TAG))
     return finished
   
   def get_stat_wo(self, jobname, stat):
