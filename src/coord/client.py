@@ -4,7 +4,8 @@ Created on Apr 3, 2013
 @author: liyin
 '''
 
-
+import sys
+import os
 import time
 import logging
 import rpc.server
@@ -25,11 +26,15 @@ class _MethodCall(object):
 
 
 class Client(object):
-  def __init__(self, master):
+  def __init__(self, master, wfname = None):
     self.master = master
+    self.recovery = False
+    self.recovered = False
+    self.wfname = wfname
     host, port = rpc.common.split_addr(master)
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.rpc_slave = {}
+    self.cter = {}
     
   def __getattr__(self, key):
     return _MethodCall(self, key)
@@ -60,11 +65,21 @@ class Client(object):
     call_future = self._get_slave_rpc(jobinfo).call(func, jobname, *args, **kw)
     return call_future.wait()
   
-  # diverse convenient execute funtion
-  def execute_cond(self, jobname, cond, *args, **kw):
-    if cond(jobname):
+  def execute(self, jobname, cond, *args, **kw):
+    if not self.recovery or not self.check_recovery(jobname):
       print 'exec'
       self.call('execute', jobname, *args, **kw)
+      if self.recovery:
+        self.log_recovery(jobname)
+      
+  # diverse convenient execute funtion
+  def execute_cond(self, jobname, cond, *args, **kw):
+    if not self.recovery or not self.check_recovery(jobname):
+      if cond(jobname):
+        print 'exec'
+        self.call('execute', jobname, *args, **kw)
+      if self.recovery:
+        self.log_recovery(jobname)
   
   def execute_period(self, jobname, interval=1.0, *args, **kw):
     # do not check finished for the first round
@@ -78,6 +93,35 @@ class Client(object):
     _period_execute = partial(self.execute_period_cond, jobname, cond, interval, *args, **kw)
     t = threading.Timer(interval, _period_execute)
     t.start()
+    
+  def check_recovery(self, jobname):
+    if not self.recovery or self.recovered:
+      return False
+    try:
+      if not self.cter.has_key(jobname):
+        cnt = self.db.Get(jobname)
+        self.cter[jobname] = cnt
+      if self.cter.has_key(jobname) and self.cter[jobname] > 0:
+        --self.cter[jobname]
+        return True
+      else:
+        return False
+    except KeyError:
+      return False
+      
+      
+  def log_recovery(self, jobname):
+    self.recovered = True
+    counter = self.db.Get(jobname)
+    self.db.Put(jobname, counter)
+    
+  def begin_checkblock(self, name):
+    self.db = leveldb.LevelDB(name + '.db')
+    self.recovery = True
+    self.recovered = False
+    
+  def end_checkblock(self, name):
+    os.rmdir(name + '.db')
     
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
