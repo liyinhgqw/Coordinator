@@ -34,7 +34,6 @@ class Client(object):
     host, port = rpc.common.split_addr(master)
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.rpc_slave = {}
-    self.cter = {}
     
   def __getattr__(self, key):
     return _MethodCall(self, key)
@@ -113,15 +112,17 @@ class Client(object):
   def log_recovery(self, jobname):
     self.recovered = True
     counter = self.db.Get(jobname)
-    self.db.Put(jobname, counter)
+    self.db.Put(jobname, ++counter)
     
   def begin_checkblock(self, name):
     self.db = leveldb.LevelDB(name + '.db')
     self.recovery = True
     self.recovered = False
+    self.cter = {}
     
   def end_checkblock(self, name):
-    os.rmdir(name + '.db')
+    if os.path.exists(name + '.db'):
+      os.rmdir(name + '.db')
     
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
