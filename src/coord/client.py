@@ -64,6 +64,7 @@ class Client(object):
     call_future = self._get_slave_rpc(jobinfo).call(func, jobname, *args, **kw)
     return call_future.wait()
   
+  # support recovery
   def execute(self, jobname, cond, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
       print 'exec'
@@ -71,6 +72,7 @@ class Client(object):
       if self.recovery:
         self.log_recovery(jobname)
       
+  # support recovery
   # diverse convenient execute funtion
   def execute_cond(self, jobname, cond, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
@@ -79,6 +81,26 @@ class Client(object):
         self.call('execute', jobname, *args, **kw)
       if self.recovery:
         self.log_recovery(jobname)
+  
+  # support recovery
+  def execute_cond_wait(self, jobname, cond, *args, **kw):
+    if not self.recovery or not self.check_recovery(jobname):
+      while not cond(jobname):
+        time.sleep(0.5)
+      print 'exec'
+      self.call('execute', jobname, *args, **kw)
+      if self.recovery:
+        self.log_recovery(jobname)    
+  
+  # support recovery
+  def execute_dep(self, jobname, depname, *args, **kw):
+    if not self.recovery or not self.check_recovery(jobname):
+      while not self.call('check_finished', depname, *args, **kw):
+        time.sleep(0.5)
+      print 'exec'
+      self.call('execute', jobname, *args, **kw)
+      if self.recovery:
+        self.log_recovery(jobname)      
   
   def execute_period(self, jobname, interval=1.0, *args, **kw):
     # do not check finished for the first round
