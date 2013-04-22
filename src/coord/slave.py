@@ -156,7 +156,7 @@ class Slave(object):
 
 
     
-  def __init__(self, host, port):
+  def __init__(self, host, port, recovery = False):
     self.logger = logging.getLogger("Slave")
     self.logger.setLevel(logging.DEBUG)
     self._port = port + 1  # slave server listen the port+1
@@ -167,6 +167,7 @@ class Slave(object):
     self._stopjob = {}
     if (not os.path.exists(coord.common.SLAVE_META_PATH)):
       os.mkdir(coord.common.SLAVE_META_PATH)
+    self.recovery = recovery
     
   def server_forever(self):
     while self.running:
@@ -180,11 +181,26 @@ class Slave(object):
     self.logger.info("Registered slave %s:%d" % (coord.common.localhost(), self._port))
     
     self.running = True
+    if self.recovery: 
+      self.recover()
     self.server_forever()
         
   def stop(self):
     ''' Cannot stop immediately '''
     self.running = False
+    
+  def find_job_from_tag(self, tag):
+    index = tag.find(coord.common.STARTED_TAG)
+    if index >= 0:
+      return tag[:index]
+    
+  def recover(self):
+    # lookat meta dir, and recover jobs that have STARTED_TAG
+    jobs = [dirname for dirname in os.listdir(coord.common.SLAVE_META_PATH) 
+            if os.path.isdir(dirname) and dirname.endswith(coord.common.STARTED_TAG)]
+    jobs = map(self.find_job_from_tag, jobs)
+    for job in jobs:
+      self.execute_wo(job, False)
     
   def get_jobinfo(self, jobname):
     if self.jobmap.has_key(jobname):
@@ -203,7 +219,8 @@ class Slave(object):
       if not check_finished or self.check_newround(jobname):   # only clean finish tag in jobstat
         status = os.system(jobinfo['Command'] + " &")
         if status == 0:
-          os.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+          lfs = coord.common.LFS()
+          lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                          coord.common.STARTED_TAG)) # mark start tag
           self.jobstats[jobname].start()                            # start if the job is really launched
     return status

@@ -30,6 +30,11 @@ class LFS(object):
   def __init__(self):
     pass
   
+  def mkdir(self, dirname):
+    if os.path.exists(dirname):
+      os.rmdir(dirname)
+    os.mkdir(dirname)
+  
   def get_subdirs(self, dirname):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
   
