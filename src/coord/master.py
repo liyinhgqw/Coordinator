@@ -24,16 +24,25 @@ class Master(object):
     def foo(self, handle, arg1, arg2):
       handle.done(self.do_something(arg1, arg2))
       
+    
     # Called from jobconf (client end)
     def register_job(self, handle, jobinfos):
       for jobname, jobinfo in jobinfos.iteritems():
-        self.jobinfoDB.Put(jobname, pickle(jobinfo))
-        slavehost = jobinfo['Host']
+        if jobinfo.has_key('Host'):
+          slavehost = jobinfo['Host']
+          self.jobinfoDB.Put(jobname, pickle(jobinfo))
+        else:
+          slavehost = self.master.find_lightest_load_slave()
+          assert slavehost is not None
+          jobinfo['Host'] = slavehost
+          self.jobinfoDB.Put(jobname, pickle(jobinfo))
+          
         if self.master.rpc_client.has_key(slavehost):
           self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
           
       print unpickle(self.jobinfoDB.Get(jobname))
       handle.done(1)
+      
       
     def lookup(self, handle, jobname):
       try:
@@ -63,6 +72,7 @@ class Master(object):
     self.db = leveldb.LevelDB('jobinfo.db')
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), int(port), handler=self.MyHandler(self))
     self.rpc_client = {}
+    self.slave_stats = {}
     
   def heartbeat(self):
     bad_slave = [];
@@ -96,7 +106,29 @@ class Master(object):
   def stop(self):
     ''' Cannot stop immediately '''
     self.running = False
+    
+  def get_slave_stats(self):
+    for slavehost, slaverpc in self.rpc_client:
+      self.slave_stats[slavehost] = slaverpc.get_slave_stat()
+    return self.slave_stats
+  
+  def get_slave_stat(self, slavehost):
+    if self.rpc_client.has_key(slavehost):
+      self.slave_stats[slavehost] = self.rpc_client[slavehost].get_slave_stat()
+    return self.slave.stats[slavehost]
       
+      
+  def find_lightest_load_slave(self):
+    mincpu = None
+    minslave = None
+    self.get_slave_stats()
+    for slavehost, slavestat in self.slave_stats:
+      if slavestat.has_key('cpu'):
+        if mincpu is None or slavestat['cpu'] < minslave:
+          minslave = slavehost
+          mincpu = slavestat['cpu']
+          
+    return minslave
 
 if __name__ == '__main__':
   master = Master(coord.common.MASTER_PORT)

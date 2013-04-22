@@ -4,6 +4,7 @@ Created on Apr 1, 2013
 @author: liyinhgqw
 '''
 import time
+import psutil
 import logging
 import rpc.server
 import rpc.client
@@ -152,6 +153,8 @@ class Slave(object):
     def get_stat(self, handle, jobname, stat):
       handle.done(self.slave.get_stat_wo(jobname, stat))
 
+    def get_slave_stat(self, handle):
+      handle.done(self.slave.get_slave_stat_wo())
 
 
 
@@ -546,6 +549,11 @@ class Slave(object):
     if self.jobstats.has_key(jobname):
       return self.jobstats[jobname].get_stat(stat)
   
+  def get_slave_stat_wo(self):
+    stat = {}
+    stat['cpu'] = psutil.cpu_percent(0.5)
+    return stat
+    
 if __name__ == '__main__':
   slave = Slave(coord.common.localhost(), coord.common.MASTER_PORT)
   slave.start()
