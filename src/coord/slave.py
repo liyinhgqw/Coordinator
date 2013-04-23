@@ -39,8 +39,10 @@ class Slave(object):
       
       
     def execute(self, handle, jobname, check_finished=True):
-      handle.done(True)
-      self.slave.execute_wo(jobname, check_finished)
+      runnable = self.isrunnable(jobname, check_finished)
+      if runnable:
+        self.slave.execute_wo(jobname, check_finished)
+      handle.done(runnable)
       
     def delay_execute(self, handle, jobname, timetpl, check_finished=True):
       handle.done(True)
@@ -211,28 +213,32 @@ class Slave(object):
     else:
       return None
     
+  def isrunnable(self, jobname, check_finished = True):
+    jobinfo = self.get_jobinfo(jobname)
+    if jobinfo is None:
+      return False
+    
+    if not check_finished or self.check_newround(jobname):   # only clean finish tag in jobstat
+      return True
+    else:
+      return False
+    
   def execute_wo(self, jobname, check_finished=True):
     print 'execute:', jobname
-    status = -1
     jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      print '==', check_finished, self.check_finished_wo(jobname)
-      print jobinfo
-      print jobinfo['Command']
-      if not check_finished or self.check_newround(jobname):   # only clean finish tag in jobstat
-        status = os.system(jobinfo['Command'] + " &")
-        if status == 0:
-          lfs = coord.common.LFS()
-          lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+    status = os.system(jobinfo['Command'] + " &")
+    if status == 0:
+      lfs = coord.common.LFS()
+      lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                          coord.common.STARTED_TAG)) # mark start tag
-          self.jobstats[jobname].start()                            # start if the job is really launched
-    return status
+      self.jobstats[jobname].start()                            # start if the job is really launched
+    return status == 0
     
   def period_execute_wo(self, jobname, interval, check_finished=True):
     if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
       self._stopjob[jobname] = False
     else:
-      ret = self.execute_wo(jobname, check_finished)
+      status = self.execute_wo(jobname, check_finished)
       print 'do period execute.', ret
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
