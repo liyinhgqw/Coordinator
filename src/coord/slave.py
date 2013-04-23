@@ -145,6 +145,12 @@ class Slave(object):
     
     def checknclear_finished(self, handle, jobname):
       handle.done(self.slave.checknclear_finished_wo(jobname))
+      
+    def check_milestone(self, handle, jobname):
+      handle.done(self.slave.check_milestone_wo(jobname))
+      
+    def checknclear_milestone(self, handle, jobname):
+      handle.done(self.slave.checknclear_milestone_wo(jobname))
     
     def has_input(self, handle, jobname, threshold = 1000000):
       handle.done(self.slave.get_unfinished_input_size_wo(jobname) > threshold)
@@ -539,18 +545,26 @@ class Slave(object):
                                          coord.common.STARTED_TAG))    
     
   def checknclear_finished_wo(self, jobname):
-    lfs = coord.common.LFS()
     finished = self.check_finished_wo(jobname)
     if finished:
-      print '************************************************'
-      if lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                       coord.common.FINISHED_TAG)):
-        os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.FINISHED_TAG))
-      if lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                       coord.common.STARTED_TAG)):
-        os.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.STARTED_TAG))
+      lfs = coord.common.LFS()
+      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.FINISHED_TAG))
+      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.STARTED_TAG))
     return finished
-  
+
+  def check_milestone_wo(self, jobname):
+    lfs = coord.common.LFS()
+    lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+                                       coord.common.MILESTONE_TAG))
+      
+  def checknclear_milestone_wo(self, jobname):
+    milestone = self.check_milestone_wo(jobname)
+    if milestone:
+      lfs = coord.common.LFS()
+      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
+                                         coord.common.MILESTONE_TAG))
+    return milestone
+    
   def get_stat_wo(self, jobname, stat):
     if self.jobstats.has_key(jobname):
       return self.jobstats[jobname].get_stat(stat)

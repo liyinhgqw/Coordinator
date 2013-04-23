@@ -4,6 +4,7 @@ Created on Apr 9, 2013
 @author: stud
 '''
 
+import os
 import coord.common
 import coord.slave
 import threading
@@ -62,8 +63,16 @@ class JobStat(object):
         self.backuprate = cur_backup - self._backup
     
   def update(self):
+    # finished
     if self.slave.checknclear_finished_wo(self.jobname):
       self.finish()
+      # also tag milestone
+      lfs = coord.common.LFS()
+      lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
+                                       coord.common.MILESTONE_TAG))
+      
+      delt = threading.Timer(coord.common.CLEAR_INTERVAL, self.slave.checknclear_milestone_wo)
+      delt.start()
       
     self.update_backuprate()
     

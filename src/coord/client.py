@@ -86,7 +86,7 @@ class Client(object):
   def execute_cond_wait(self, jobname, cond, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
       while not cond(jobname):
-        time.sleep(0.5)
+        time.sleep(lfs = coord.common.LFS())
       print 'exec'
       self.call('execute', jobname, check_finished, *args, **kw)
       if self.recovery:
@@ -95,8 +95,8 @@ class Client(object):
   # support recovery
   def execute_dep(self, jobname, depname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      while not self.call('check_finished', depname, *args, **kw):
-        time.sleep(0.5)
+      while not self.call('check_milestone', depname, *args, **kw):
+        time.sleep(coord.common.RETRY_INTERVAL)
       print 'exec'
       self.call('execute', jobname, check_finished,  *args, **kw)
       if self.recovery:

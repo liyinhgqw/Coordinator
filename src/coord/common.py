@@ -13,7 +13,10 @@ MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
 FINISHED_TAG = '_FINISHED'
 STARTED_TAG = '_STARTED'
+MILESTONE_TAG = '_MILESTONE'
 SLAVE_META_PATH = '/tmp/coord'
+CLEAR_INTERVAL = 20
+RETRY_INTERVAL = 2
 
 def _getsockname():
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,6 +38,10 @@ class LFS(object):
       os.rmdir(dirname)
     os.mkdir(dirname)
   
+  def rmdir(self, dirname):
+    if os.path.exists(dirname):
+      os.rmdir(dirname)
+    
   def get_subdirs(self, dirname):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
   
