@@ -34,13 +34,21 @@ class LFS(object):
     pass
   
   def mkdir(self, dirname):
-    if os.path.exists(dirname):
-      os.rmdir(dirname)
+    self.rm_rf(dirname)
     os.mkdir(dirname)
   
   def rmdir(self, dirname):
     if os.path.exists(dirname):
       os.rmdir(dirname)
+      
+  def rm_rf(self, d):
+    if os.path.exists(d):
+      for path in (os.path.join(d,f) for f in os.listdir(d)):
+        if os.path.isdir(path):
+          self.rm_rf(path)
+        else:
+          os.unlink(path)
+      os.rmdir(d)
     
   def get_subdirs(self, dirname):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]

@@ -23,7 +23,8 @@ class JobTool(object):
     self.runtime = runtime
     
     if self.outdir is not None:
-      os.mkdir(self.outdir)
+      lfs = coord.common.LFS()
+      lfs.mkdir(self.outdir)
       
     if self.inbatch:
       assert self.indir is not None
