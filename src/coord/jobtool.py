@@ -8,7 +8,8 @@ import time
 import coord.common
 from optparse import OptionParser
 
-MSG_USAGE = "usage: %prog [ -n <jobname>] [ -t <runtime>] [ -i <input dir>] [ -o <output dir>]"
+MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] \
+               [ -b <inbatch>] [ -B <outbatch>] [ -t <runtime>]"
 
 class JobTool(object):
   def __init__(self, jobname, indir, outdir, inbatch = False, outbatch = False, runtime = 1.0):
@@ -91,14 +92,6 @@ if __name__ == '__main__':
                        help = "Set job name."
                        )
   
-  optParser.add_option("-t",
-                       "--time",
-                       action = "store",
-                       type = "float",
-                       dest = "runtime", 
-                       default = 60.0,
-                       help = "Set job duration."
-                       )
 
   optParser.add_option("-i",
                        "--input",
@@ -132,8 +125,17 @@ if __name__ == '__main__':
                        help = "Set output batch mode."
                        ) 
   
+  optParser.add_option("-t",
+                       "--time",
+                       action = "store",
+                       type = "float",
+                       dest = "runtime", 
+                       default = 60.0,
+                       help = "Set job duration."
+                       )
+  
   options, _ = optParser.parse_args(sys.argv[1:])
   assert options.jobname is not None
   
-  job = JobTool(options.jobname, options.runtime, options.indir, options.outdir, options.inbatch, options.outbatch)
+  job = JobTool(options.jobname, options.indir, options.outdir, options.inbatch, options.outbatch, options.runtime)
   job.runjob()
