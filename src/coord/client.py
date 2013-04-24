@@ -134,7 +134,8 @@ class Client(object):
   def log_recovery(self, jobname):
     self.recovered = True
     counter = self.db.Get(jobname)
-    self.db.Put(jobname, ++counter)
+    counter += 1
+    self.db.Put(jobname, counter)
     
   def begin_checkblock(self, name):
     self.db = leveldb.LevelDB(name + '.db')

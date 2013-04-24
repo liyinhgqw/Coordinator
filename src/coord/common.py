@@ -34,8 +34,8 @@ class LFS(object):
     pass
   
   def mkdir(self, dirname):
-    self.rm_rf(dirname)
-    os.mkdir(dirname)
+    if not os.path.exists(dirname):
+      os.mkdir(dirname)
   
   def rmdir(self, dirname):
     if os.path.exists(dirname):

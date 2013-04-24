@@ -31,9 +31,11 @@ class JobTool(object):
       self.indir = self.find_next_buffered_seg(jobname, self.indir)
     
     if self.outbatch:
-      outdir = self.find_next_seg(self.outdir) 
+      self.outdir = self.find_next_seg(self.outdir) 
+      print '---', outdir
       if outdir is not None:
-        os.mkdir(self.outdir)
+        lfs = coord.common.LFS()
+        lfs.mkdir(self.outdir)
     
   def pre_run(self):
     # Tag indir started
