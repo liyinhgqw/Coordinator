@@ -13,7 +13,6 @@ MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] \
 
 class JobTool(object):
   def __init__(self, jobname, indir, outdir, inbatch = False, outbatch = False, runtime = 1.0):
-    print 'start'
     # jobname is required
     self.jobname = jobname
     self.indir = indir
@@ -32,7 +31,6 @@ class JobTool(object):
     
     if self.outbatch:
       self.outdir = self.find_next_seg(self.outdir) 
-      print '---', outdir
       if outdir is not None:
         lfs = coord.common.LFS()
         lfs.mkdir(self.outdir)

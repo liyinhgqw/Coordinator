@@ -12,8 +12,7 @@ import coord.jobtool
 
 class AdGenerator(coord.jobtool.JobTool):
   def run(self):
-    print "run"
-    print self.outdir
+    print "run:", self.outdir
     self.outfile = open(os.path.join(self.outdir, "ads"), 'w')
     self.generate()
 
