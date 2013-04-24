@@ -12,44 +12,49 @@ MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] \
                [ -b <inbatch>] [ -B <outbatch>] [ -t <runtime>]"
 
 class JobTool(object):
-  def __init__(self, jobname, indir, outdir, inbatch = False, outbatch = False, runtime = 1.0):
+  def __init__(self, jobname, indir, outdir, runtime = 1.0):
     # jobname is required
     self.jobname = jobname
-    self.indir = indir
-    self.outdir = outdir
-    self.inbatch = inbatch
-    self.outbatch = outbatch
+    if indir is not None:
+      self.indir = indir.split(',')
+    else:
+      self.indir = None
+    if outdir is not None:
+      self.outdir = outdir.split(',')
+    else:
+      self.outdir = None
     self.runtime = runtime
     
     if self.outdir is not None:
       lfs = coord.common.LFS()
-      lfs.mkdir(self.outdir)
+      map(lfs.mkdir, self.outdir)
       
-    if self.inbatch:
-      assert self.indir is not None
-      self.indir = self.find_next_buffered_seg(jobname, self.indir)
-    
-    if self.outbatch:
-      self.outdir = self.find_next_seg(self.outdir) 
-      if outdir is not None:
-        lfs = coord.common.LFS()
-        lfs.mkdir(self.outdir)
-    
   def pre_run(self):
+    lfs = coord.common.LFS()
+    # Tag job started
+    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STARTED_TAG))
     # Tag indir started
-    if self.indir is not None and not os.path.exists(os.path.join(self.indir, self.jobname + coord.common.STARTED_TAG)):
-      os.mkdir(os.path.join(self.indir, self.jobname + coord.common.STARTED_TAG))
+    if self.indir is not None:
+      for dirname in lfs.get_subdirs(self.indir, False):
+        lfs.mkdir(os.path.join(dirname, self.jobname + coord.common.STARTED_TAG))
       
   def post_run(self):
+    lfs = coord.common.LFS()
     # Tag indir finished
-    if self.indir is not None and not os.path.exists(os.path.join(self.indir, self.jobname + coord.common.FINISHED_TAG)):
-      os.mkdir(os.path.join(self.indir, self.jobname + coord.common.FINISHED_TAG))  
-      
+    if self.indir is not None:
+      for dirname in lfs.get_subdirs(self.indir, False):
+        lfs.mkdir(os.path.join(dirname, self.jobname + coord.common.FINISHED_TAG))
+    # Tag outdir finished
+    if self.outdir is not None:
+      for dirname in lfs.get_subdirs(self.outdir, False):
+        lfs.mkdir(os.path.join(dirname, coord.common.DONE_TAG))
     # Tag job finished
-    if self.indir is not None and not os.path.exists(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.FINISHED_TAG)):
-      os.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.FINISHED_TAG))   
-      
-      
+    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STAT_TAG)) 
+    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.MILESTONE_TAG))
+    lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STARTED_TAG))
+    time.sleep(10)
+    lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.MILESTONE_TAG))
+
   def runjob(self):
     self.pre_run()
     self.run()
@@ -75,13 +80,25 @@ class JobTool(object):
       return os.path.join(pdir, '0')
     return os.path.join(pdir, str(max(segs) + 1))
   
-  def find_next_buffered_seg(self, jobname, pdir):
+  # TODO: add ouput job finished tag
+  def find_next_buffered_seg(self,  pdir):
     lfs = coord.common.LFS()
-    segs = [int(seg) for seg in lfs.get_buffered_subdirs(pdir, jobname) if self.check_valid_seg(seg)]
+    segs = [int(seg) for seg in lfs.get_buffered_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
     if len(segs) <= 0:
       return None
     return os.path.join(pdir, str(min(segs)))
-
+  
+  def is_segdir(self, pdir):
+    lfs = coord.common.LFS()
+    segs = [int(seg) for seg in lfs.get_subdirs(pdir) if self.check_valid_seg(seg)]
+    if segs is not None and len(segs) > 0:
+      return True
+    return False
+  
+  def touch_dir(self, dirname):
+    lfs = coord.common.LFS()
+    lfs.mkdir(dirname)
+  
 if __name__ == '__main__':
   optParser = OptionParser(MSG_USAGE)
   
@@ -110,22 +127,6 @@ if __name__ == '__main__':
                        help = "Set input directory."
                        ) 
   
-  optParser.add_option("-b",
-                       "--inbatch",
-                       action = "store_true",
-                       dest = "inbatch",
-                       default = False, 
-                       help = "Set input batch mode."
-                       ) 
-
-  optParser.add_option("-B",
-                       "--outbatch",
-                       action = "store_true",
-                       dest = "outbatch",
-                       default = False, 
-                       help = "Set output batch mode."
-                       ) 
-  
   optParser.add_option("-t",
                        "--time",
                        action = "store",
@@ -138,5 +139,6 @@ if __name__ == '__main__':
   options, _ = optParser.parse_args(sys.argv[1:])
   assert options.jobname is not None
   
-  job = JobTool(options.jobname, options.indir, options.outdir, options.inbatch, options.outbatch, options.runtime)
+  # only include dirs that need tags
+  job = JobTool(options.jobname, options.indir, options.outdir, options.runtime)
   job.runjob()

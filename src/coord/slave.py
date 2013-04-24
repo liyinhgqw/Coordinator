@@ -28,7 +28,7 @@ class Slave(object):
     def register_job(self, handle, jobname, jobinfo):
       self.slave.logger.info('register job')
       self.slave.jobmap[jobname] = jobinfo
-      self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, 1.0, self.slave)
+      self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, self.slave)
       print jobname, jobinfo
       handle.done(1)
       
@@ -143,14 +143,11 @@ class Slave(object):
     def check_finished(self, handle, jobname):
       handle.done(self.slave.check_finished_wo(jobname))
     
-    def checknclear_finished(self, handle, jobname):
-      handle.done(self.slave.checknclear_finished_wo(jobname))
-      
     def check_milestone(self, handle, jobname):
       handle.done(self.slave.check_milestone_wo(jobname))
       
-    def checknclear_milestone(self, handle, jobname):
-      handle.done(self.slave.checknclear_milestone_wo(jobname))
+#    def checknclear_milestone(self, handle, jobname):
+#      handle.done(self.slave.checknclear_milestone_wo(jobname))
     
     def has_input(self, handle, jobname, threshold = 1000000):
       handle.done(self.slave.get_unfinished_input_size_wo(jobname) > threshold)
@@ -201,7 +198,7 @@ class Slave(object):
     self.running = False
     
   def find_job_from_tag(self, tag):
-    index = tag.find(coord.common.STARTED_TAG)
+    index = tag.find('_')
     if index >= 0:
       return tag[:index]
     
@@ -224,7 +221,7 @@ class Slave(object):
     if jobinfo is None:
       return False
     
-    if not check_finished or self.check_newround(jobname):   # only clean finish tag in jobstat
+    if not check_finished or self.check_finished_wo(jobname):   # only clean finish tag in jobstat
       return True
     else:
       return False
@@ -233,11 +230,6 @@ class Slave(object):
     print 'execute:', jobname
     jobinfo = self.get_jobinfo(jobname)
     status = os.system(jobinfo['Command'] + " &")
-    if status == 0:
-      lfs = coord.common.LFS()
-      lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.STARTED_TAG)) # mark start tag
-      self.jobstats[jobname].start()                            # start if the job is really launched
     return status == 0
     
   def period_execute_wo(self, jobname, interval, check_finished=True):
@@ -245,12 +237,10 @@ class Slave(object):
       self._stopjob[jobname] = False
     else:
       status = self.execute_wo(jobname, check_finished)
-      print 'do period execute.', ret
+      print 'do period execute.', status
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()
-
-
 
   # Input Stats        
   def get_input_size_wo(self, jobname):
@@ -534,36 +524,21 @@ class Slave(object):
   # job finish
   def check_finished_wo(self, jobname):
     lfs = coord.common.LFS()
-    return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.FINISHED_TAG)) or not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
+    return not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                          coord.common.STARTED_TAG))
   
-  def check_newround(self, jobname):
-    lfs = coord.common.LFS()
-    return not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.FINISHED_TAG)) and not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.STARTED_TAG))    
-    
-  def checknclear_finished_wo(self, jobname):
-    finished = self.check_finished_wo(jobname)
-    if finished:
-      lfs = coord.common.LFS()
-      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.FINISHED_TAG))
-      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname + coord.common.STARTED_TAG))
-    return finished
-
   def check_milestone_wo(self, jobname):
     lfs = coord.common.LFS()
     lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
                                        coord.common.MILESTONE_TAG))
       
-  def checknclear_milestone_wo(self, jobname):
-    milestone = self.check_milestone_wo(jobname)
-    if milestone:
-      lfs = coord.common.LFS()
-      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
-                                         coord.common.MILESTONE_TAG))
-    return milestone
+#  def checknclear_milestone_wo(self, jobname):
+#    milestone = self.check_milestone_wo(jobname)
+#    if milestone:
+#      lfs = coord.common.LFS()
+#      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
+#                                         coord.common.MILESTONE_TAG))
+#    return milestone
     
   def get_stat_wo(self, jobname, stat):
     if self.jobstats.has_key(jobname):

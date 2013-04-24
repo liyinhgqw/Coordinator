@@ -13,6 +13,8 @@ MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
 FINISHED_TAG = '_FINISHED'
 STARTED_TAG = '_STARTED'
+DONE_TAG = 'DONE'
+STAT_TAG = '_STAT'
 MILESTONE_TAG = '_MILESTONE'
 SLAVE_META_PATH = '/tmp/coord'
 CLEAR_INTERVAL = 20
@@ -50,15 +52,19 @@ class LFS(object):
           os.unlink(path)
       os.rmdir(d)
     
-  def get_subdirs(self, dirname):
-    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) ]
+  def is_done(self, dirname):
+    return os.path.exists(os.path.join(dirname, DONE_TAG))
   
-  def get_unfinished_subdirs(self, dirname, jobname = ''):
-    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) and
+  def get_subdirs(self, dirname, checkdone = False):
+    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
+            if not checkdone or self.is_done(os.path.join(dirname, sdir))]
+  
+  def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [sdir for sdir in self.get_subdir_num(dirname, checkdone) and
                not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
-  def get_buffered_subdirs(self, dirname, jobname = ''):
-    return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) and
+  def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [sdir for sdir in self.get_subdir_num(dirname, checkdone = False) and
                not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not os.path.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     
@@ -68,11 +74,11 @@ class LFS(object):
   def get_subdir_num(self, dirname):
     return len(self.get_subdirs(dirname))
   
-  def get_unfinished_subdir_num(self, dirname, jobname = ''):
-    return len(self.get_unfinished_subdirs(dirname, jobname))
+  def get_unfinished_subdir_num(self, dirname, jobname = '', checkdone = False):
+    return len(self.get_unfinished_subdirs(dirname, jobname, checkdone = False))
   
-  def get_buffered_subdir_num(self, dirname, jobname = ''):
-    return len(self.get_buffered_subdirs(dirname, jobname))
+  def get_buffered_subdir_num(self, dirname, jobname = '', checkdone = False):
+    return len(self.get_buffered_subdirs(dirname, jobname, checkdone = False))
   
   def get_subfile_num(self, dirname):
     return len(self.get_subfiles(dirname))

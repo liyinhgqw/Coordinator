@@ -12,6 +12,9 @@ import coord.jobtool
 
 class AdGenerator(coord.jobtool.JobTool):
   def run(self):
+    self.outdir = self.find_next_seg(self.outdir[0])
+    self.touch_dir(self.outdir)
+    
     print "run:", self.outdir
     self.outfile = open(os.path.join(self.outdir, "ads"), 'w')
     self.generate()
@@ -40,5 +43,5 @@ if __name__ == '__main__':
   global batchsize
   batchsize = int(sys.argv[1])
   
-  adgenerator = AdGenerator("AdGenerator", None, "adgenerator_out", outbatch = True)
+  adgenerator = AdGenerator("AdGenerator", None, "adgenerator_out")
   adgenerator.runjob()

@@ -15,46 +15,45 @@ class JobStat(object):
   Statistics of each job calculated and recorded by slaves.
   '''
 
-  def __init__(self, jobname, interval, slave):
+  def __init__(self, jobname, slave, interval = 1.0):
     self.jobname = jobname
     self.interval = interval
     self.slave = slave
-    self.lock = threading.Lock()
-    
     # avg stats
     self.runtime = -1
     self.backuprate = 0;
-    
-    self._st = -1
-    self._et = -1
     self._elapse = -1
     self._backup = -1
     
     self.start_update()
     
-  def has_runtime_stat(self):
-    return self.runtime > 0
-  
-  def start(self):
-    with self.lock:
-      self._st = coord.common.curtime()
-  
-  def finish(self):
-    if self._st > 0:
-      self._et = coord.common.curtime()
-      self._elapse = self._et - self._st
-      if self._elapse > 0:
-        # for runtime
-        if self.runtime < 0:
-          self.runtime = self._elapse
-        else:
-          self.runtime = self.runtime * 0.6 + self._elapse * 0.4
+  def do_stat(self):
+    try:
+      statpath = os.path.join(coord.common.SLAVE_META_PATH, self.jobname
+                                 + coord.common.STAT_TAG)
+      statfile = open(statpath)
+      for stat in statfile:
+        self._elapse = float(stat) 
+        if self._elapse > 0:
+          # for runtime
+          if self.runtime < 0:
+            self.runtime = self._elapse
+          else:
+            self.runtime = self.runtime * 0.6 + self._elapse * 0.4
         
-          cur_backup = self.slave.get_unfinished_input_totalsize_wo(self.jobname)
-          self.backuprate = cur_backup - self._backup
-          self._backup = cur_backup
-    with self.lock:
-      self._st = -1
+      cur_backup = self.slave.get_unfinished_input_totalsize_wo(self.jobname)
+      self.backuprate = cur_backup - self._backup
+      self._backup = cur_backup
+    except:
+      pass
+    finally:
+      os.unlink(statpath)
+      
+    
+  def check_stat(self):
+    lfs = coord.common.LFS()
+    return lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
+                                   coord.common.STAT_TAG))
     
   def update_backuprate(self):
     # for backuprate
@@ -64,16 +63,8 @@ class JobStat(object):
     
   def update(self):
     # finished
-    if self.slave.checknclear_finished_wo(self.jobname):
-      self.finish()
-      # also tag milestone
-      lfs = coord.common.LFS()
-      lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + 
-                                       coord.common.MILESTONE_TAG))
-      
-      delt = threading.Timer(coord.common.CLEAR_INTERVAL, self.slave.checknclear_milestone_wo)
-      delt.start()
-      
+    if self.check_stat():
+      self.do_stat()
     self.update_backuprate()
     
     t = threading.Timer(self.interval, self.update)

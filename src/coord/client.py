@@ -146,6 +146,7 @@ class Client(object):
   def end_checkblock(self, name):
     if os.path.exists(name + '.db'):
       os.rmdir(name + '.db')
+      
     
 if __name__ == '__main__':
   sockname = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
