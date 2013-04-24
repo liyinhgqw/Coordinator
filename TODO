@@ -1,0 +1,11 @@
+a. jobconf
+  alias = fs:path:mode
+  $alias
+
+b. remove DONE tag
+  replace with tmp linkout and linkback
+
+c. garbage connection for fault tolerant
+  clear tags if a job is failed
+
+
