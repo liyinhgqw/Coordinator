@@ -16,7 +16,6 @@ import coord.jobtool
 import os
 import threading
 from functools import partial
-from coord.jobtool import JobTool
 import copy
 
 class DirInfo(object):

@@ -17,9 +17,13 @@ MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [
 class JobTool(object):
   def __init__(self, jobname, indirs, outdirs, runtime=1.0):
     self.jobname = jobname
-    if indirs is not None:
+    if indirs is None or indirs == '':
+      self.inputs = {}
+    else:
       self.inputs = self.deserialize(indirs)
-    if outdirs is not None:
+    if outdirs is None or outdirs == '':
+      self.outputs = {}
+    else:
       self.outputs = self.deserialize(outdirs)
       
     self.runtime = runtime

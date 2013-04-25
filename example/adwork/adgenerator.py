@@ -8,15 +8,16 @@ import sys
 import os
 import random
 import coord.jobtool
+import coord.common
 
+HOME = '/home/stud/workspace/Coordinator/example/adwork'
 
 class AdGenerator(coord.jobtool.JobTool):
   def run(self):
-    self.outdir = self.find_next_seg(self.outdir[0])
-    self.touch_dir(self.outdir)
-    
-    print "run:", self.outdir
-    self.outfile = open(os.path.join(self.outdir, "ads"), 'w')
+    lfs = coord.common.LFS()
+    segpath = self.next_seg('lfs', os.path.join(HOME, 'ads'))
+    lfs.mkdir(segpath)
+    self.outfile = open(os.path.join(segpath, 'ad'), 'w')
     self.generate()
 
   def gen_id(self):
@@ -37,11 +38,11 @@ class AdGenerator(coord.jobtool.JobTool):
   def generate(self):
     global batchsize
     for i in range(batchsize):
-       self.outfile.write(self.generate_record())  
+      self.outfile.write(self.generate_record())  
 
 if __name__ == '__main__':
   global batchsize
   batchsize = int(sys.argv[1])
   
-  adgenerator = AdGenerator("AdGenerator", None, "adgenerator_out")
+  adgenerator = AdGenerator("AdGenerator", None, None)
   adgenerator.runjob()
