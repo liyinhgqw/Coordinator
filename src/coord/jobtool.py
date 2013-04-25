@@ -61,6 +61,15 @@ class JobTool(object):
           exit(1)
         self.tag_started(ipt.fs, nextseg)
         print 'input seg (STARTED)=', nextseg
+      elif ipt.mode == 2:
+        segs = self.unfinished_seg(ipt.fs, ipt.path)
+        print segs
+        if len(segs) <= 0:
+          exit(1)
+        for seg in segs:
+          print seg
+          self.tag_started(ipt.fs, seg)
+        print 'input seg (STARTED)=', segs
     return True
       
   def post_run(self):
@@ -69,7 +78,14 @@ class JobTool(object):
       if ipt.mode == 1:
         nextseg = self.next_unfinished_seg(ipt.fs, ipt.path)
         self.tag_finished(ipt.fs, nextseg)
-        print 'input seg (FINISHED)=', nextseg,
+        print 'input seg (FINISHED)=', nextseg
+      elif ipt.mode == 2:
+        segs = self.unfinished_seg(ipt.fs, ipt.path)
+        if len(segs) <= 0:
+          exit(1)
+        for seg in segs:
+          self.tag_finished(ipt.fs, seg)
+        print 'input seg (STARTED)=', segs
 
   def runjob(self):
     self.pre_run()
@@ -109,9 +125,19 @@ class JobTool(object):
       segs = [int(seg) for seg in lfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
     elif fs == 'dfs':
       dfs = coord.common.DFS()
-      segs = [int(seg) for seg in dfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+      segs = [int(seg) for seg in dfs.get_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
 
     return None if len(segs) <=0 else os.path.join(pdir, str(min(segs)))
+  
+  def unfinished_seg(self, fs, pdir):
+    if fs == 'lfs':
+      lfs = coord.common.LFS()
+      segs = [int(seg) for seg in lfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+    elif fs == 'dfs':
+      dfs = coord.common.DFS()
+      segs = [int(seg) for seg in dfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+    segs = map(lambda seg: os.path.join(pdir, str(seg)), segs)
+    return segs
   
   # not necessary
   def touch_dir(self, fs, dirname):

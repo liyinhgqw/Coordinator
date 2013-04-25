@@ -11,8 +11,11 @@ from os.path import join, getsize
 
 MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
+
 FINISHED_TAG = '_FINISHED'
 STARTED_TAG = '_STARTED'
+DONE_TAG = '_DONE'# deprecated
+
 MILESTONE_INTERVAL = 10
 SLAVE_META_PATH = '/tmp/coord'
 CLEAR_INTERVAL = 20

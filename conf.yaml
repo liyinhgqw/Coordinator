@@ -2,7 +2,7 @@
 Job1: 
   Host: 10.0.2.15 
   Inputs: 
-    - I1 = /home/stud/workspace/Coordinator/test/in =
+    - I1 = /home/stud/workspace/Coordinator/test/in ==
   Outputs: 
     - O = /home/stud/workspace/Coordinator/test/out = 
   Command: python /home/stud/workspace/Coordinator/src/coord/jobtool.py

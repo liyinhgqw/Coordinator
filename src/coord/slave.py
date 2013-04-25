@@ -62,10 +62,12 @@ class JobInfo(object):
       path = path[path.index(':')+1 :]
     else:
       fs = 'lfs'
-    if len(dirlist) >= 3:
+    if len(dirlist) < 3:
+      mode = 0
+    elif len(dirlist) == 3:
       mode = 1
     else:
-      mode = 0
+      mode = 2
     return DirInfo(alias, path, fs, mode)    
       
 class Slave(object):
