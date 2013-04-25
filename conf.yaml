@@ -2,12 +2,11 @@
 Job1: 
   Host: 10.0.2.15 
   Inputs: 
-    LFS: 
-      - I = /home/stud/workspace/Coordinator/test/in
+    - I1 = /home/stud/workspace/Coordinator/test/in 
+    - I2 = hdfs:/home/yin 
   Outputs: 
-    LFS: 
-      - O = /home/stud/workspace/Coordinator/test/out
-  Command: python /home/stud/workspace/Coordinator/test/mockjob.py -n 'Job1' -i '/home/stud/workspace/Coordinator/test/in' -o '/home/stud/workspace/Coordinator/test/out' -b 
+    - O = /home/stud/workspace/Coordinator/test/out = 
+  Command: python /home/stud/workspace/Coordinator/test/mockjob.py 
 
 
 

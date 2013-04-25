@@ -5,6 +5,7 @@ Created on Apr 2, 2013
 '''
 import sys
 import yaml
+import coord.common
 from optparse import OptionParser
 from yaml import load, dump
 
@@ -29,8 +30,7 @@ class JobConf(object):
       self.register_job(fileinfo)
   
   def register_job(self, fileinfo):
-    host, port = rpc.common.split_addr(self.master)
-    self.rpc_client = rpc.client.RPCClient(host, port)
+    self.rpc_client = rpc.client.RPCClient(self.master, coord.common.MASTER_PORT)
     register_job_future = self.rpc_client.register_job(fileinfo)
     assert 1 == register_job_future.wait()
     
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                          action = "store",
                          type = "string",
                          dest = "master", 
-                         default = "127.0.0.1:9999",
+                         default = "127.0.0.1",
                          help = "Need host:port of master."
                          ) 
     options, _ = optParser.parse_args(sys.argv[1:])

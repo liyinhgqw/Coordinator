@@ -6,15 +6,66 @@ Created on Apr 1, 2013
 import time
 import psutil
 import logging
+import thread, threading
 import rpc.server
 import rpc.client
 import coord.common
 import coord.jobstat 
+import coord.jobtool
 import os
 import threading
 from functools import partial
+from coord.jobtool import JobTool
 
-
+class DirInfo(object):
+  def __init__(self, alias, path, fs, mode = 0):
+    self.alias = alias
+    self.path = path
+    self.fs = fs
+    self.mode = mode
+    
+  def __str__(self):
+    return '(' + self.alias + ', ' + self.path + ', ' + self.fs + ', ' + str(self.mode) + ')'
+    
+class JobInfo(object):
+  def __init__(self, jobinfo):
+    self.command = jobinfo['Command']
+    self.inputs = {}
+    self.outputs = {}
+    
+    for ipt in jobinfo['Inputs']:
+      dinfo = self.parse(ipt)
+      self.inputs[dinfo.alias] = dinfo
+      
+    for opt in jobinfo['Outputs']:
+      dinfo = self.parse(opt)
+      self.outputs[dinfo.alias] = dinfo
+      
+  def __str__(self):
+    ret =  'Command: ' + self.command + '\n' + 'Inputs: \n'
+    for ipt in self.inputs.values():
+      ret += str(ipt) + '\n' 
+    ret += 'Outputs: \n'
+    for opt in self.outputs.values():
+      ret += str(opt) + '\n' 
+      
+    return ret
+          
+  def parse(self, dirstr):
+    dirlist = dirstr.split('=')
+    alias = dirlist[0].strip()
+    path = dirlist[1].strip()
+    if path.startswith('hdfs:'):
+      fs = 'dfs'
+      path = path[path.index(':')+1 :]
+    else:
+      fs = 'lfs'
+    if len(dirlist) >= 3:
+      mode = 1
+    else:
+      mode = 0
+    return DirInfo(alias, path, fs, mode)    
+      
 class Slave(object):
   class MyHandler(object):
     def __init__(self, slave):
@@ -26,17 +77,13 @@ class Slave(object):
       
     # Called from master
     def register_job(self, handle, jobname, jobinfo):
+      print '---'
       self.slave.logger.info('register job')
-      self.slave.jobmap[jobname] = jobinfo
-      self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, self.slave)
-      print jobname, jobinfo
+      self.slave.jobmap[jobname] = JobInfo(jobinfo)
+  #    self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, self.slave)
+      print 'Register Job: ' + jobname
+      print self.slave.jobmap[jobname]
       handle.done(1)
-      
-    # Called from client
-    def cmd(self, handle, jobname, cmdstr):
-      status = os.system(cmdstr + " &")
-      handle.done(status)
-      
       
     def execute(self, handle, jobname, check_finished=True):
       runnable = self.isrunnable(jobname, check_finished)
@@ -171,6 +218,8 @@ class Slave(object):
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
+    self.runningjobs = []
+    self.milestone = []
     self.jobstats = {}
     self._stopjob = {}
     if (not os.path.exists(coord.common.SLAVE_META_PATH)):
@@ -216,21 +265,31 @@ class Slave(object):
     else:
       return None
     
-  def isrunnable(self, jobname, check_finished = True):
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is None:
+  def isrunnable(self, jobname, check = True):
+    if not self.jobmap.has_key(jobname):
       return False
-    
-    if not check_finished or self.check_finished_wo(jobname):   # only clean finish tag in jobstat
+    if not check or not self.is_running_wo(jobname):   # only clean finish tag in jobstat
       return True
     else:
       return False
     
-  def execute_wo(self, jobname, check_finished=True):
-    print 'execute:', jobname
-    jobinfo = self.get_jobinfo(jobname)
-    status = os.system(jobinfo['Command'] + " &")
-    return status == 0
+  def runjob(self, jobname, inputs, outputs):
+    runtool = coord.jobtool.JobTool(jobname, inputs, outputs)
+    runtool.runjob()
+    
+  def execute_wo(self, jobname, check = True):
+    if not self.isrunnable(jobname, check):
+      return False
+    print 'Execute:', jobname
+    # Prerun
+    # record job status in mem and tag
+    
+    # Run
+    thread.start_new_thread(self.runjob, jobname)
+    
+    # Post run
+    # remove status in mem and tag
+    return True
     
   def period_execute_wo(self, jobname, interval, check_finished=True):
     if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
@@ -521,17 +580,15 @@ class Slave(object):
   def get_buffered_output_subdirtotalnum_wo(self, jobname, depjob):
     return sum([dirnum for _, dirnum in self.get_buffered_output_subdirnum_wo(jobname, depjob).iteritems()])
 
-  # job finish
-  def check_finished_wo(self, jobname):
-    lfs = coord.common.LFS()
-    return not lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                         coord.common.STARTED_TAG))
+  def is_running_wo(self, jobname):
+    return jobname in self.runningjobs
   
-  def check_milestone_wo(self, jobname):
-    lfs = coord.common.LFS()
-    lfs.exists(os.path.join(coord.common.SLAVE_META_PATH, jobname + 
-                                       coord.common.MILESTONE_TAG))
-      
+  def is_finished_wo(self, jobname):
+    return not self.is_running_wo(jobname)
+  
+  def is_milestone_wo(self, jobname):
+    return jobname in self.milestone
+  
 #  def checknclear_milestone_wo(self, jobname):
 #    milestone = self.check_milestone_wo(jobname)
 #    if milestone:
