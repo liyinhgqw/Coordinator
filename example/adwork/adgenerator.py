@@ -4,11 +4,9 @@ Created on Apr 23, 2013
 @author: stud
 '''
 
-import sys
-import os
 import random
-import coord.jobtool
-import coord.common
+import sys, os
+import coord.jobtool, coord.common
 
 HOME = '/home/stud/workspace/Coordinator/example/adwork'
 

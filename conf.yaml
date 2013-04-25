@@ -6,6 +6,14 @@ Job1:
   Outputs: 
     - O = /home/stud/workspace/Coordinator/test/out = 
   Command: python /home/stud/workspace/Coordinator/src/coord/jobtool.py
+---
+RankSelect:
+  Host: 10.0.2.15
+  Inputs:
+    - I1 = /home/stud/workspace/Coordinator/example/adwork/ads ==
+  Outputs:
+    - O1 = /home/stud/workspace/Coordinator/example/adwork/select =
+  Command: python /home/stud/workspace/Coordinator/example/adwork/rankselect.py
 
 
 

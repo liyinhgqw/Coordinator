@@ -60,6 +60,10 @@ class LFS(object):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
             if not checkdone or self.is_done(os.path.join(dirname, sdir))]
   
+  def get_abs_subdirs(self, dirname, checkdone = False):
+    return [os.path.join(dirname, sdir) for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
+            if not checkdone or self.is_done(os.path.join(dirname, sdir))]  
+    
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
     return [sdir for sdir in self.get_subdirs(dirname, checkdone) if
                not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
@@ -72,6 +76,10 @@ class LFS(object):
   def get_subfiles(self, dirname):
     return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
   
+  def get_abs_subfiles(self, dirname):
+    return [os.path.join(dirname, sfile) for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
+  
+
   def get_subdir_num(self, dirname):
     return len(self.get_subdirs(dirname))
   
@@ -137,6 +145,10 @@ class DFS(object):
   def get_subdirs(self, dirname, checkdone = False):
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
             if not checkdone or self.is_done(os.path.join(dirname, sdir))]
+    
+  def get_abs_subdirs(self, dirname, checkdone = False):
+    return [os.path.join(dirname, sdir) for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
+            if not checkdone or self.is_done(os.path.join(dirname, sdir))]    
   
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
     return [sdir for sdir in self.get_subdir_num(dirname, checkdone) and
@@ -149,6 +161,9 @@ class DFS(object):
     
   def get_subfiles(self, dirname):
     return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
+  
+  def get_abs_subfiles(self, dirname):
+    return [os.path.join(dirname, sfile) for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
   
   def get_subdir_num(self, dirname):
     return len(self.get_subdirs(dirname))

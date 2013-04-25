@@ -12,6 +12,70 @@ from optparse import OptionParser
 
 # TODO: tmp link
 
+# input and output has two functions: tag for indirs & provide paths for both indirs and outdirs
+#
+# Always include the following template in your defined job
+#
+
+#import coord.jobtool, coord.common
+#import os, sys
+#from optparse import OptionParser
+#
+#class YOUR_JOB(coord.jobtool.JobTool):
+#  def run(self):
+#    pass
+#
+#
+#MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [ -t <runtime>]"
+#if __name__ == '__main__':
+#  optParser = OptionParser(MSG_USAGE)
+#  
+#  optParser.add_option("-n",
+#                       "--name",
+#                       action="store",
+#                       type="string",
+#                       dest="jobname",
+#                       help="Set job name."
+#                       )
+#  
+#
+#  optParser.add_option("-i",
+#                       "--input",
+#                       action="store",
+#                       type="string",
+#                       dest="indir",
+#                       default=None,
+#                       help="Set input directory."
+#                       ) 
+#    
+#  optParser.add_option("-o",
+#                       "--output",
+#                       action="store",
+#                       type="string",
+#                       dest="outdir",
+#                       default=None,
+#                       help="Set input directory."
+#                       ) 
+#  
+#  optParser.add_option("-t",
+#                       "--time",
+#                       action="store",
+#                       type="float",
+#                       dest="runtime",
+#                       default=5.0,
+#                       help="Set job duration."
+#                       )
+#  
+#  options, _ = optParser.parse_args(sys.argv[1:])
+#  assert options.jobname is not None
+#  
+#  # only include dirs that need tags
+#  job = YOUR_JOB(options.jobname, options.indir, options.outdir, options.runtime)
+#  job.runjob()
+
+
+
+
 MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [ -t <runtime>]"
 
 class JobTool(object):
@@ -26,6 +90,12 @@ class JobTool(object):
     else:
       self.outputs = self.deserialize(outdirs)
       
+    self.indirs = copy.deepcopy(self.inputs)
+    for indir in self.indirs.values():
+      indir.path = [indir.path]
+    self.outdirs = copy.deepcopy(self.outputs)
+    for outdir in self.outdirs.values():
+      outdir.path = [outdir.path]
     self.runtime = runtime
       
   def deserialize(self, dirliststr):
@@ -65,6 +135,7 @@ class JobTool(object):
           exit(1)
         self.tag_started(ipt.fs, nextseg)
         print 'input seg (STARTED)=', nextseg
+        self.indirs[ipt.alias].path = [nextseg]    # change to seg path
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
         print segs
@@ -74,6 +145,13 @@ class JobTool(object):
           print seg
           self.tag_started(ipt.fs, seg)
         print 'input seg (STARTED)=', segs
+        self.indirs[ipt.alias].path = segs    # change to seg path
+        
+
+    for opt in self.outputs.values():
+      if opt.mode == 1:
+        nextseg = self.next_seg(opt.fs, opt.path)
+        self.outdirs[opt.alias].path = [nextseg]    # change to seg path
     return True
       
   def post_run(self):
@@ -89,7 +167,7 @@ class JobTool(object):
           exit(1)
         for seg in segs:
           self.tag_finished(ipt.fs, seg)
-        print 'input seg (STARTED)=', segs
+        print 'input seg (FINISHED)=', segs
 
   def runjob(self):
     self.pre_run()
@@ -115,9 +193,11 @@ class JobTool(object):
   def next_seg(self, fs, pdir):
     if fs == 'lfs':
       lfs = coord.common.LFS()
+      lfs.mkdir(pdir)
       segs = [int(seg) for seg in lfs.get_subdirs(pdir) if self.check_valid_seg(seg)]
     elif fs == 'dfs':
       dfs = coord.common.DFS()
+      dfs.mkdir(pdir)
       segs = [int(seg) for seg in dfs.get_subdirs(pdir) if self.check_valid_seg(seg)]
 
     return  os.path.join(pdir, '0') if len(segs) <=0 else os.path.join(pdir, str(max(segs) + 1))
