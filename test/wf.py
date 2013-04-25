@@ -11,7 +11,7 @@ class Proxy(coord.client.Client):
     return False
   
 if __name__ == '__main__':
-  master = coord.common.localhost() + ':' + str(coord.common.MASTER_PORT)
+  master = coord.common.localhost())
   proxy = Proxy(master)
   proxy.execute_period_cond('Job1', proxy.need_input, 1.0)
 #  proxy.execute_period_cond('Job1', proxy.need_input, 1.0)

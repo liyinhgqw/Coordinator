@@ -31,8 +31,7 @@ class Client(object):
     self.recovery = False
     self.recovered = False
     self.wfname = wfname
-    host, port = rpc.common.split_addr(master)
-    self.rpc_client = rpc.client.RPCClient(host, port)
+    self.rpc_client = rpc.client.RPCClient(master, coord.common.MASTER_PORT)
     self.rpc_slave = {}
     
   def __getattr__(self, key):

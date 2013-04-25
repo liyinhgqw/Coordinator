@@ -287,7 +287,11 @@ class Slave(object):
     ret = -1
     try:
       st_time = coord.common.curtime()
-      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + self.serialize(inputs) + "' ' " + self.serialize(outputs) + "'")
+      print self.serialize(inputs)
+      print self.serialize(outputs)
+      cmd = self.jobmap[jobname].command + " -n " + jobname + " -i '" + self.serialize(inputs) + "' -o '" + self.serialize(outputs) + "'"
+      print cmd
+      ret = os.system(cmd)
       elapse = coord.common.curtime() - st_time
     except:
       pass
@@ -354,7 +358,7 @@ class Slave(object):
         
   def get_unfinished_input_size_wo(self, jobname):
     ret = {}
-    for ipt in self.jobmap[jobname].inputs:
+    for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[ipt.alias] = lfs.get_unfinished_dir_size(ipt.path)
@@ -368,7 +372,7 @@ class Slave(object):
       
   def get_unfinished_input_subdirnum_wo(self, jobname):
     ret = {}
-    for ipt in self.jobmap[jobname].inputs:
+    for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[ipt.alias] = lfs.get_unfinished_subdir_num(ipt.path)
@@ -382,7 +386,7 @@ class Slave(object):
 
   def get_buffered_input_size_wo(self, jobname):
     ret = {}
-    for ipt in self.jobmap[jobname].inputs:
+    for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[ipt.alias] = lfs.get_buffered_dir_size(ipt.path)
@@ -396,7 +400,7 @@ class Slave(object):
       
   def get_buffered_input_subdirnum_wo(self, jobname):
     ret = {}
-    for ipt in self.jobmap[jobname].inputs:
+    for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[ipt.alias] = lfs.get_buffered_subdir_num(ipt.path)
@@ -411,7 +415,7 @@ class Slave(object):
   # Output Stats        
   def get_output_size_wo(self, jobname):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_dir_size(opt.path)
@@ -425,7 +429,7 @@ class Slave(object):
 
   def get_output_subdirnum_wo(self, jobname):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_subdir_num(opt.path)
@@ -439,7 +443,7 @@ class Slave(object):
         
   def get_unfinished_output_size_wo(self, jobname, depjob):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_unfinished_dir_size(opt.path)
@@ -453,7 +457,7 @@ class Slave(object):
       
   def get_unfinished_output_subdirnum_wo(self, jobname, depjob):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_unfinished_subdir_num(opt.path)
@@ -467,7 +471,7 @@ class Slave(object):
 
   def get_buffered_output_size_wo(self, jobname, depjob):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_buffered_dir_size(opt.path)
@@ -481,7 +485,7 @@ class Slave(object):
       
   def get_buffered_output_subdirnum_wo(self, jobname, depjob):
     ret = {}
-    for opt in self.jobmap[jobname].outputs:
+    for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
         ret[opt.alias] = lfs.get_buffered_subdir_num(opt.path)
