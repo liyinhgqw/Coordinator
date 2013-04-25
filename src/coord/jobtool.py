@@ -31,8 +31,6 @@ class JobTool(object):
       
   def pre_run(self):
     lfs = coord.common.LFS()
-    # Tag job started
-    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STARTED_TAG))
     # Tag indir started
     if self.indir is not None:
       for dirname in lfs.get_subdirs(self.indir, False):

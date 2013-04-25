@@ -79,33 +79,28 @@ class Slave(object):
       
     # Called from master
     def register_job(self, handle, jobname, jobinfo):
-      print '---'
-      self.slave.logger.info('register job')
       self.slave.jobmap[jobname] = JobInfo(jobinfo)
-  #    self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, self.slave)
+      self.slave.jobstats[jobname] = coord.jobstat.JobStat(jobname, self.slave)
       print 'Register Job: ' + jobname
       print self.slave.jobmap[jobname]
       handle.done(1)
       
     def execute(self, handle, jobname, check_finished=True):
-      runnable = self.isrunnable(jobname, check_finished)
-      if runnable:
-        self.slave.execute_wo(jobname, check_finished)
-      handle.done(runnable)
+      handle.done(self.slave.execute_wo(jobname, check_finished))
       
-    def delay_execute(self, handle, jobname, timetpl, check_finished=True):
-      handle.done(True)
-      _execute = partial(self.slave.execute_wo, jobname, check_finished)
-      print 'interval', coord.common.delay(timetpl)
+    def delay_execute(self, handle, jobname, timetpl, check=True):
+      _execute = partial(self.slave.execute_wo, jobname, check)
+      print 'delay execute', coord.common.delay(timetpl)
       t = threading.Timer(coord.common.delay(timetpl), _execute)
       t.start()
+      handle.done(True)
       
-    def period_execute(self, handle, jobname, interval=1.0, check_finished=True):
+    def period_execute(self, handle, jobname, interval=1.0, check=True):
       self.slave._stopjob[jobname] = False
       # do not check finished for the first round
       ret = self.slave.execute_wo(jobname)
       print 'do period execute.', ret
-      _period_execute = partial(self.slave.period_execute_wo, jobname, interval, check_finished)
+      _period_execute = partial(self.slave.period_execute_wo, jobname, interval, check)
       t = threading.Timer(interval, _period_execute)
       t.start()
       handle.done(True)
@@ -189,11 +184,14 @@ class Slave(object):
       handle.done(self.slave.get_buffered_output_subdirtotalnum_wo(jobname, depjob))
       
     # job finish
-    def check_finished(self, handle, jobname):
-      handle.done(self.slave.check_finished_wo(jobname))
+    def is_finished(self, handle, jobname):
+      handle.done(self.slave.is_finished_wo(jobname))
+
+    def is_running(self, handle, jobname):
+      handle.done(self.slave.is_running_wo(jobname))
     
-    def check_milestone(self, handle, jobname):
-      handle.done(self.slave.check_milestone_wo(jobname))
+    def is_milestone(self, handle, jobname):
+      handle.done(self.slave.is_milestone_wo(jobname))
       
 #    def checknclear_milestone(self, handle, jobname):
 #      handle.done(self.slave.checknclear_milestone_wo(jobname))
@@ -277,15 +275,21 @@ class Slave(object):
     
   def runjob(self, jobname, inputs, outputs):
     lfs = coord.common.LFS()
+    elapse = -1
+    ret = -1
     try:
-      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + inputs + "' ' " + outputs + "'")
-      # Post run
-      # remove status in mem and tag
+      st_time = coord.common.curtime()
+      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + str(inputs) + "' ' " + str(outputs) + "'")
+      elapse = coord.common.curtime() - st_time
     except:
       pass
     finally:
+      # Post run
+      # remove status in mem and tag
       lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname+coord.common.STARTED_TAG))
       self.runningjobs.remove(jobname)
+      if ret == 0:
+        self.jobstats[jobname].update(jobname, elapse)
     
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):
@@ -297,43 +301,30 @@ class Slave(object):
     lfs = coord.common.LFS()
     lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname+coord.common.STARTED_TAG))
     # Run
-    for ipt self.jobmap[jobname].inputs:
-      ii = copy.deepcopy(ipt)
-      
-    thread.start_new_thread(self.runjob, (jobname, inputs, outputs))
+    thread.start_new_thread(self.runjob, (jobname, self.jobmap[jobname].inputs, self.jobmap[jobname].outputs))
 
     return True
     
-  def period_execute_wo(self, jobname, interval, check_finished=True):
+  def period_execute_wo(self, jobname, interval, check = True):
     if self._stopjob.has_key(jobname) and self._stopjob[jobname] == True:
       self._stopjob[jobname] = False
     else:
-      status = self.execute_wo(jobname, check_finished)
-      print 'do period execute.', status
+      status = self.execute_wo(jobname, check)
+      print 'do period execute:', jobname
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()
 
-
   # Input Stats        
   def get_input_size_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_dir_size(ldirpath)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_dir_size(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_dir_size(ddirpath)
+        ret[ipt.alias] = dfs.get_dir_size(ipt.path)
     return ret        
   
   def get_input_totalsize_wo(self, jobname):
@@ -341,256 +332,156 @@ class Slave(object):
 
   def get_input_subdirnum_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_subdir_num(ldirpath)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_subdir_num(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_subdir_num(ddirpath)
-    return ret
+        ret[ipt.alias] = dfs.get_subdir_num(ipt.path)
+    return ret        
 
   def get_input_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_input_subdirnum_wo(jobname).iteritems()])
         
   def get_unfinished_input_size_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_dir_size(ldirpath, jobname)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_unfinished_dir_size(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_dir_size(ddirpath, jobname)
-    return ret
-  
+        ret[ipt.alias] = dfs.get_unfinished_dir_size(ipt.path)
+    return ret        
+
   def get_unfinished_input_totalsize_wo(self, jobname):
     return sum([dirsize for _, dirsize in self.get_unfinished_input_size_wo(jobname).iteritems()])
       
   def get_unfinished_input_subdirnum_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_subdir_num(ldirpath, jobname)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_unfinished_subdir_num(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_subdir_num(ddirpath, jobname)
-    return ret
-  
+        ret[ipt.alias] = dfs.get_unfinished_subdir_num(ipt.path)
+    return ret        
+
   def get_unfinished_input_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_unfinished_input_subdirnum_wo(jobname).iteritems()])
 
   def get_buffered_input_size_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_buffered_dir_size(ldirpath, jobname)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_buffered_dir_size(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_buffered_dir_size(ddirpath, jobname)
-    return ret
+        ret[ipt.alias] = dfs.get_buffered_dir_size(ipt.path)
+    return ret        
   
   def get_buffered_input_totalsize_wo(self, jobname):
     return sum([dirsize for _, dirsize in self.get_buffered_input_size_wo(jobname).iteritems()])
       
   def get_buffered_input_subdirnum_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Inputs'].has_key('LFS'):
+    for ipt in self.jobmap[jobname].inputs:
+      if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Inputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_buffered_subdir_num(ldirpath, jobname)
-      if jobinfo['Inputs'].has_key('DFS'):
+        ret[ipt.alias] = lfs.get_buffered_subdir_num(ipt.path)
+      if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Inputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_buffered_subdir_num(ddirpath, jobname)
-    return ret
-  
+        ret[ipt.alias] = dfs.get_buffered_subdir_num(ipt.path)
+    return ret        
+
   def get_buffered_input_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_buffered_input_subdirnum_wo(jobname).iteritems()])
-
 
   # Output Stats        
   def get_output_size_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_dir_size(ldirpath)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_dir_size(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_dir_size(ddirpath)
+        ret[opt.alias] = dfs.get_dir_size(opt.path)
     return ret        
-  
+
   def get_output_totalsize_wo(self, jobname):
     return sum([dirsize for _, dirsize in self.get_output_size_wo(jobname).iteritems()])
 
   def get_output_subdirnum_wo(self, jobname):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_subdir_num(ldirpath)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_subdir_num(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_subdir_num(ddirpath)
-    return ret
+        ret[opt.alias] = dfs.get_subdir_num(opt.path)
+    return ret        
 
   def get_output_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_output_subdirnum_wo(jobname).iteritems()])
         
   def get_unfinished_output_size_wo(self, jobname, depjob):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_dir_size(ldirpath, depjob)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_unfinished_dir_size(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_dir_size(ddirpath, depjob)
-    return ret
-  
+        ret[opt.alias] = dfs.get_unfinished_dir_size(opt.path)
+    return ret        
+
   def get_unfinished_output_totalsize_wo(self, jobname, depjob):
     return sum([dirsize for _, dirsize in self.get_unfinished_output_size_wo(jobname, depjob).iteritems()])
       
   def get_unfinished_output_subdirnum_wo(self, jobname, depjob):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_unfinished_subdir_num(ldirpath, depjob)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_unfinished_subdir_num(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_unfinished_subdir_num(ddirpath, depjob)
-    return ret
-  
+        ret[opt.alias] = dfs.get_unfinished_subdir_num(opt.path)
+    return ret        
+
   def get_unfinished_output_subdirtotalnum_wo(self, jobname, depjob):
     return sum([dirnum for _, dirnum in self.get_unfinished_output_subdirnum_wo(jobname, depjob).iteritems()])
 
   def get_buffered_output_size_wo(self, jobname, depjob):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_buffered_dir_size(ldirpath, depjob)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_buffered_dir_size(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_buffered_dir_size(ddirpath, depjob)
-    return ret
+        ret[opt.alias] = dfs.get_buffered_dir_size(opt.path)
+    return ret        
   
   def get_buffered_output_totalsize_wo(self, jobname, depjob):
     return sum([dirsize for _, dirsize in self.get_buffered_output_size_wo(jobname, depjob).iteritems()])
       
   def get_buffered_output_subdirnum_wo(self, jobname, depjob):
     ret = {}
-    jobinfo = self.get_jobinfo(jobname)
-    if jobinfo is not None:
-      if jobinfo['Outputs'].has_key('LFS'):
+    for opt in self.jobmap[jobname].outputs:
+      if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        for ldir in jobinfo['Outputs']['LFS']:
-          alias, ldirpath = ldir.split('=')
-          alias = alias.strip()
-          ldirpath = ldirpath.strip()
-          ret[alias] = lfs.get_buffered_subdir_num(ldirpath, depjob)
-      if jobinfo['Outputs'].has_key('DFS'):
+        ret[opt.alias] = lfs.get_buffered_subdir_num(opt.path)
+      if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        for ddir in jobinfo['Outputs']['DFS']:
-          alias, ddirpath = ddir.split('=')
-          alias = alias.strip()
-          ddirpath = ddirpath.strip()
-          ret[alias] = dfs.get_buffered_subdir_num(ddirpath, depjob)
-    return ret
-  
+        ret[opt.alias] = dfs.get_buffered_subdir_num(opt.path)
+    return ret        
+
   def get_buffered_output_subdirtotalnum_wo(self, jobname, depjob):
     return sum([dirnum for _, dirnum in self.get_buffered_output_subdirnum_wo(jobname, depjob).iteritems()])
 
