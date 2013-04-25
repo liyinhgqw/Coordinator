@@ -219,7 +219,7 @@ class Slave(object):
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
     self.runningjobs = Set()
-    self.milestone = []
+    self.milestone = Set()
     self.jobstats = {}
     self._stopjob = {}
     if (not os.path.exists(coord.common.SLAVE_META_PATH)):
@@ -302,6 +302,10 @@ class Slave(object):
       self.runningjobs.remove(jobname)
       if ret == 0:
         self.jobstats[jobname].update(elapse)
+        
+      # For use of dep wait
+      self.milestone.add(jobname)
+      threading.Timer(coord.common.MILESTONE_INTERVAL, self.milestone.remove, jobname)
     
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):

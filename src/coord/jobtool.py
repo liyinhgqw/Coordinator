@@ -79,6 +79,7 @@ class JobTool(object):
   def run(self):
     print 'runtime = ', self.runtime
     time.sleep(self.runtime)
+    print self.inputs['I1'].fs, self.inputs['I1'].path
     print 'finished'
     
   def check_valid_seg(self, seg):

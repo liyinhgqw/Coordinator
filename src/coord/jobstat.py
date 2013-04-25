@@ -33,8 +33,7 @@ class JobStat(object):
       if cur_backup - self._backup > self.backuprate:
         self.backuprate = cur_backup - self._backup
 
-    t = threading.Timer(self.interval, self.update_backuprate)
-    t.start()
+    threading.Timer(self.interval, self.update_backuprate).start()
     
   def update(self, elapse):
     if elapse > 0:

@@ -94,7 +94,7 @@ class Client(object):
   # support recovery
   def execute_dep(self, jobname, depname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      while not self.call('check_milestone', depname, *args, **kw):
+      while not self.call('is_milestone', depname, *args, **kw):
         time.sleep(coord.common.RETRY_INTERVAL)
       print 'exec'
       self.call('execute', jobname, check_finished,  *args, **kw)
@@ -137,7 +137,7 @@ class Client(object):
     self.db.Put(jobname, counter)
     
   def begin_checkblock(self, name):
-    self.db = leveldb.LevelDB(name + '.db')
+    self.db = leveldb.LevelDB(name + '_recovery.db')
     self.recovery = True
     self.recovered = False
     self.cter = {}
