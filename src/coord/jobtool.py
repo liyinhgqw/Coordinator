@@ -16,7 +16,7 @@ class JobTool(object):
     # jobname is required
     self.jobname = jobname
     if indir is not None:
-      self.indir = indir.split(',')
+      inlist = indir.split(',')
     else:
       self.indir = None
     if outdir is not None:
@@ -81,9 +81,13 @@ class JobTool(object):
     return os.path.join(pdir, str(min(segs)))
   
   
-  def touch_dir(self, dirname):
-    lfs = coord.common.LFS()
-    lfs.mkdir(dirname)
+  def touch_dir(self, fs, dirname):
+    if fs == 'lfs':
+      lfs = coord.common.LFS()
+      lfs.mkdir(dirname)
+    else:
+      dfs = coord.common.DFS()
+      dfs.mkdir(dirname)
   
 if __name__ == '__main__':
   optParser = OptionParser(MSG_USAGE)
@@ -102,6 +106,7 @@ if __name__ == '__main__':
                        action="store",
                        type="string",
                        dest="indir",
+                       default=None,
                        help="Set input directory."
                        ) 
     
@@ -110,6 +115,7 @@ if __name__ == '__main__':
                        action="store",
                        type="string",
                        dest="outdir",
+                       default=None,
                        help="Set input directory."
                        ) 
   

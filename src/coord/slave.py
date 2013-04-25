@@ -273,13 +273,21 @@ class Slave(object):
     else:
       return False
     
+  def serialize(self, dirname):
+    sdir = ''
+    for alias, ditem in dirname.iteritems():
+      sdir = sdir + str(ditem) + ','
+    if sdir.endswith(','):
+      sdir = sdir[:-1]
+    return sdir
+    
   def runjob(self, jobname, inputs, outputs):
     lfs = coord.common.LFS()
     elapse = -1
     ret = -1
     try:
       st_time = coord.common.curtime()
-      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + str(inputs) + "' ' " + str(outputs) + "'")
+      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + self.serialize(inputs) + "' ' " + self.serialize(outputs) + "'")
       elapse = coord.common.curtime() - st_time
     except:
       pass
