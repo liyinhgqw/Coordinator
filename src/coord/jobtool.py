@@ -12,7 +12,7 @@ MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] \
                [ -b <inbatch>] [ -B <outbatch>] [ -t <runtime>]"
 
 class JobTool(object):
-  def __init__(self, jobname, indir, outdir, runtime = 1.0):
+  def __init__(self, jobname, indir, outdir, runtime=1.0):
     # jobname is required
     self.jobname = jobname
     if indir is not None:
@@ -40,20 +40,14 @@ class JobTool(object):
       
   def post_run(self):
     lfs = coord.common.LFS()
-    # Tag indir finished
-    if self.indir is not None:
-      for dirname in lfs.get_subdirs(self.indir, False):
-        lfs.mkdir(os.path.join(dirname, self.jobname + coord.common.FINISHED_TAG))
-    # Tag outdir finished
-    if self.outdir is not None:
-      for dirname in lfs.get_subdirs(self.outdir, False):
-        lfs.mkdir(os.path.join(dirname, coord.common.DONE_TAG))
-    # Tag job finished
-    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STAT_TAG)) 
-    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.MILESTONE_TAG))
-    lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.STARTED_TAG))
-    time.sleep(10)
-    lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, self.jobname + coord.common.MILESTONE_TAG))
+    for ipt in self.inputs:
+      if ipt.mode == 1:
+        nextseg = self.next_seg(ipt)
+        if ipt.fs == 'lfs':
+          lfs.mkdir(os.path.join(nextseg, self.jobname + coord.common.FINISHED_TAG))
+        else:
+          dfs = coord.common.DFS()
+          dfs.mkdir(os.path.join(nextseg, self.jobname + coord.common.FINISHED_TAG))
 
   def runjob(self):
     self.pre_run()
@@ -81,19 +75,13 @@ class JobTool(object):
     return os.path.join(pdir, str(max(segs) + 1))
   
   # TODO: add ouput job finished tag
-  def find_next_buffered_seg(self,  pdir):
+  def find_next_buffered_seg(self, pdir):
     lfs = coord.common.LFS()
     segs = [int(seg) for seg in lfs.get_buffered_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
     if len(segs) <= 0:
       return None
     return os.path.join(pdir, str(min(segs)))
   
-  def is_segdir(self, pdir):
-    lfs = coord.common.LFS()
-    segs = [int(seg) for seg in lfs.get_subdirs(pdir) if self.check_valid_seg(seg)]
-    if segs is not None and len(segs) > 0:
-      return True
-    return False
   
   def touch_dir(self, dirname):
     lfs = coord.common.LFS()
@@ -104,36 +92,36 @@ if __name__ == '__main__':
   
   optParser.add_option("-n",
                        "--name",
-                       action = "store",
-                       type = "string",
-                       dest = "jobname", 
-                       help = "Set job name."
+                       action="store",
+                       type="string",
+                       dest="jobname",
+                       help="Set job name."
                        )
   
 
   optParser.add_option("-i",
                        "--input",
-                       action = "store",
-                       type = "string",
-                       dest = "indir", 
-                       help = "Set input directory."
+                       action="store",
+                       type="string",
+                       dest="indir",
+                       help="Set input directory."
                        ) 
     
   optParser.add_option("-o",
                        "--output",
-                       action = "store",
-                       type = "string",
-                       dest = "outdir", 
-                       help = "Set input directory."
+                       action="store",
+                       type="string",
+                       dest="outdir",
+                       help="Set input directory."
                        ) 
   
   optParser.add_option("-t",
                        "--time",
-                       action = "store",
-                       type = "float",
-                       dest = "runtime", 
-                       default = 60.0,
-                       help = "Set job duration."
+                       action="store",
+                       type="float",
+                       dest="runtime",
+                       default=60.0,
+                       help="Set job duration."
                        )
   
   options, _ = optParser.parse_args(sys.argv[1:])

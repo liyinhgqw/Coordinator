@@ -4,6 +4,7 @@ Created on Apr 1, 2013
 @author: liyinhgqw
 '''
 import time
+from sets import Set
 import psutil
 import logging
 import thread, threading
@@ -16,6 +17,7 @@ import os
 import threading
 from functools import partial
 from coord.jobtool import JobTool
+import copy
 
 class DirInfo(object):
   def __init__(self, alias, path, fs, mode = 0):
@@ -25,7 +27,7 @@ class DirInfo(object):
     self.mode = mode
     
   def __str__(self):
-    return '(' + self.alias + ', ' + self.path + ', ' + self.fs + ', ' + str(self.mode) + ')'
+    return self.alias + '|' + self.path + '|' + self.fs + '|' + str(self.mode)
     
 class JobInfo(object):
   def __init__(self, jobinfo):
@@ -218,7 +220,7 @@ class Slave(object):
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
-    self.runningjobs = []
+    self.runningjobs = Set()
     self.milestone = []
     self.jobstats = {}
     self._stopjob = {}
@@ -274,8 +276,16 @@ class Slave(object):
       return False
     
   def runjob(self, jobname, inputs, outputs):
-    runtool = coord.jobtool.JobTool(jobname, inputs, outputs)
-    runtool.runjob()
+    lfs = coord.common.LFS()
+    try:
+      ret = os.system(self.jobmap[jobname].command + " " + jobname + " '" + inputs + "' ' " + outputs + "'")
+      # Post run
+      # remove status in mem and tag
+    except:
+      pass
+    finally:
+      lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname+coord.common.STARTED_TAG))
+      self.runningjobs.remove(jobname)
     
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):
@@ -283,12 +293,15 @@ class Slave(object):
     print 'Execute:', jobname
     # Prerun
     # record job status in mem and tag
-    
+    self.runningjobs.add(jobname)
+    lfs = coord.common.LFS()
+    lfs.mkdir(os.path.join(coord.common.SLAVE_META_PATH, jobname+coord.common.STARTED_TAG))
     # Run
-    thread.start_new_thread(self.runjob, jobname)
-    
-    # Post run
-    # remove status in mem and tag
+    for ipt self.jobmap[jobname].inputs:
+      ii = copy.deepcopy(ipt)
+      
+    thread.start_new_thread(self.runjob, (jobname, inputs, outputs))
+
     return True
     
   def period_execute_wo(self, jobname, interval, check_finished=True):
@@ -300,6 +313,7 @@ class Slave(object):
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()
+
 
   # Input Stats        
   def get_input_size_wo(self, jobname):
