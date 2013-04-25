@@ -301,7 +301,7 @@ class Slave(object):
       lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, jobname+coord.common.STARTED_TAG))
       self.runningjobs.remove(jobname)
       if ret == 0:
-        self.jobstats[jobname].update(jobname, elapse)
+        self.jobstats[jobname].update(elapse)
     
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):

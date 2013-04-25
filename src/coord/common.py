@@ -58,11 +58,11 @@ class LFS(object):
             if not checkdone or self.is_done(os.path.join(dirname, sdir))]
   
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [sdir for sdir in self.get_subdir_num(dirname, checkdone) and
+    return [sdir for sdir in self.get_subdirs(dirname, checkdone) if
                not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [sdir for sdir in self.get_subdir_num(dirname, checkdone = False) and
+    return [sdir for sdir in self.get_subdirs(dirname, checkdone = False) if
                not os.path.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not os.path.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     

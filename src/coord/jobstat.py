@@ -41,7 +41,7 @@ class JobStat(object):
       if self.runtime < 0:
         self.runtime = elapse
       else:
-        self.runtime = self.runtime * 0.6 + self._elapse * 0.4
+        self.runtime = self.runtime * 0.6 + elapse * 0.4
         
     with self.lock:
       cur_backup = self.slave.get_unfinished_input_totalsize_wo(self.jobname)
