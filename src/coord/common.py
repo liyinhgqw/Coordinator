@@ -109,7 +109,6 @@ class LFS(object):
     if os.path.exists(dirname):
       for root, dirs, files in os.walk(dirname):
         if not (jobname + FINISHED_TAG) in dirs: 
-          print '*', root,dirs, files
           size += sum([getsize(join(root, name)) for name in files])
     return size
   

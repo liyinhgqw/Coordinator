@@ -67,7 +67,7 @@ class Client(object):
   def execute(self, jobname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
       print 'exec'
-      self.call('execute', jobname, check_finished, *args, **kw)
+      self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)
       
@@ -75,35 +75,35 @@ class Client(object):
   # diverse convenient execute funtion
   def execute_cond(self, jobname, cond, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      if cond(jobname):
-        print 'exec'
-        self.call('execute', jobname, check_finished, *args, **kw)
+      if cond(jobname, *args, **kw):
+        print 'exec', jobname
+        self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)
   
   # support recovery
   def execute_cond_wait(self, jobname, cond, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      while not cond(jobname):
+      while not cond(jobname, *args, **kw):
         time.sleep(lfs = coord.common.LFS())
       print 'exec'
-      self.call('execute', jobname, check_finished, *args, **kw)
+      self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)    
   
   # support recovery
   def execute_dep(self, jobname, depname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      while not self.call('is_milestone', depname, *args, **kw):
+      while not self.call('is_milestone', depname):
         time.sleep(coord.common.RETRY_INTERVAL)
       print 'exec'
-      self.call('execute', jobname, check_finished,  *args, **kw)
+      self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)      
   
   def execute_period(self, jobname, interval=1.0, check_finished = True, *args, **kw):
     # do not check finished for the first round
-    self.call('execute', jobname, check_finished, *args, **kw)
+    self.call('execute', jobname, check_finished)
     _period_execute = partial(self.execute_period, jobname, interval, check_finished, *args, **kw)
     t = threading.Timer(interval, _period_execute)
     t.start()

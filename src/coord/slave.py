@@ -366,10 +366,10 @@ class Slave(object):
     for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[ipt.alias] = lfs.get_unfinished_dir_size(ipt.path)
+        ret[ipt.alias] = lfs.get_unfinished_dir_size(ipt.path, jobname)
       if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[ipt.alias] = dfs.get_unfinished_dir_size(ipt.path)
+        ret[ipt.alias] = dfs.get_unfinished_dir_size(ipt.path, jobname)
     return ret        
 
   def get_unfinished_input_totalsize_wo(self, jobname):
@@ -380,10 +380,10 @@ class Slave(object):
     for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[ipt.alias] = lfs.get_unfinished_subdir_num(ipt.path)
+        ret[ipt.alias] = lfs.get_unfinished_subdir_num(ipt.path, jobname)
       if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[ipt.alias] = dfs.get_unfinished_subdir_num(ipt.path)
+        ret[ipt.alias] = dfs.get_unfinished_subdir_num(ipt.path, jobname)
     return ret        
 
   def get_unfinished_input_subdirtotalnum_wo(self, jobname):
@@ -394,10 +394,10 @@ class Slave(object):
     for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[ipt.alias] = lfs.get_buffered_dir_size(ipt.path)
+        ret[ipt.alias] = lfs.get_buffered_dir_size(ipt.path, jobname)
       if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[ipt.alias] = dfs.get_buffered_dir_size(ipt.path)
+        ret[ipt.alias] = dfs.get_buffered_dir_size(ipt.path, jobname)
     return ret        
   
   def get_buffered_input_totalsize_wo(self, jobname):
@@ -408,10 +408,10 @@ class Slave(object):
     for ipt in self.jobmap[jobname].inputs.values():
       if ipt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[ipt.alias] = lfs.get_buffered_subdir_num(ipt.path)
+        ret[ipt.alias] = lfs.get_buffered_subdir_num(ipt.path, jobname)
       if ipt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[ipt.alias] = dfs.get_buffered_subdir_num(ipt.path)
+        ret[ipt.alias] = dfs.get_buffered_subdir_num(ipt.path, jobname)
     return ret        
 
   def get_buffered_input_subdirtotalnum_wo(self, jobname):
@@ -446,60 +446,60 @@ class Slave(object):
   def get_output_subdirtotalnum_wo(self, jobname):
     return sum([dirnum for _, dirnum in self.get_output_subdirnum_wo(jobname).iteritems()])
         
-  def get_unfinished_output_size_wo(self, jobname, depjob):
+  def get_unfinished_output_size_wo(self, jobname, depjob = ''):
     ret = {}
     for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[opt.alias] = lfs.get_unfinished_dir_size(opt.path)
+        ret[opt.alias] = lfs.get_unfinished_dir_size(opt.path, depjob)
       if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[opt.alias] = dfs.get_unfinished_dir_size(opt.path)
+        ret[opt.alias] = dfs.get_unfinished_dir_size(opt.path, depjob)
     return ret        
 
-  def get_unfinished_output_totalsize_wo(self, jobname, depjob):
+  def get_unfinished_output_totalsize_wo(self, jobname, depjob = ''):
     return sum([dirsize for _, dirsize in self.get_unfinished_output_size_wo(jobname, depjob).iteritems()])
       
-  def get_unfinished_output_subdirnum_wo(self, jobname, depjob):
+  def get_unfinished_output_subdirnum_wo(self, jobname, depjob = ''):
     ret = {}
     for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[opt.alias] = lfs.get_unfinished_subdir_num(opt.path)
+        ret[opt.alias] = lfs.get_unfinished_subdir_num(opt.path, depjob)
       if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[opt.alias] = dfs.get_unfinished_subdir_num(opt.path)
+        ret[opt.alias] = dfs.get_unfinished_subdir_num(opt.path, depjob)
     return ret        
 
-  def get_unfinished_output_subdirtotalnum_wo(self, jobname, depjob):
+  def get_unfinished_output_subdirtotalnum_wo(self, jobname, depjob = ''):
     return sum([dirnum for _, dirnum in self.get_unfinished_output_subdirnum_wo(jobname, depjob).iteritems()])
 
-  def get_buffered_output_size_wo(self, jobname, depjob):
+  def get_buffered_output_size_wo(self, jobname, depjob = ''):
     ret = {}
     for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[opt.alias] = lfs.get_buffered_dir_size(opt.path)
+        ret[opt.alias] = lfs.get_buffered_dir_size(opt.path, depjob)
       if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[opt.alias] = dfs.get_buffered_dir_size(opt.path)
+        ret[opt.alias] = dfs.get_buffered_dir_size(opt.path, depjob)
     return ret        
   
-  def get_buffered_output_totalsize_wo(self, jobname, depjob):
+  def get_buffered_output_totalsize_wo(self, jobname, depjob = ''):
     return sum([dirsize for _, dirsize in self.get_buffered_output_size_wo(jobname, depjob).iteritems()])
       
-  def get_buffered_output_subdirnum_wo(self, jobname, depjob):
+  def get_buffered_output_subdirnum_wo(self, jobname, depjob = ''):
     ret = {}
     for opt in self.jobmap[jobname].outputs.values():
       if opt.fs == 'lfs':
         lfs = coord.common.LFS()
-        ret[opt.alias] = lfs.get_buffered_subdir_num(opt.path)
+        ret[opt.alias] = lfs.get_buffered_subdir_num(opt.path, depjob)
       if opt.fs == 'dfs':
         dfs = coord.common.DFS()
-        ret[opt.alias] = dfs.get_buffered_subdir_num(opt.path)
+        ret[opt.alias] = dfs.get_buffered_subdir_num(opt.path, depjob)
     return ret        
 
-  def get_buffered_output_subdirtotalnum_wo(self, jobname, depjob):
+  def get_buffered_output_subdirtotalnum_wo(self, jobname, depjob =''):
     return sum([dirnum for _, dirnum in self.get_buffered_output_subdirnum_wo(jobname, depjob).iteritems()])
 
   def is_running_wo(self, jobname):
