@@ -24,8 +24,8 @@ class Archive(coord.jobtool.JobTool):
     adlist = []
     for indir in self.indirs['I1'].path:
       adlist.extend(lfs.get_abs_subfiles(indir))
-    if lfs.exists(os.path.join(self.outputs['O1'].path, 'rest')):
-      adlist.append(os.path.join(self.outputs['O1'].path, 'rest'))
+    if lfs.exists(os.path.join(self.outputs['O1'].path, 'aad')):
+      adlist.append(os.path.join(self.outputs['O1'].path, 'aad'))
     ads = []
     for adfile in adlist:
       for ad in open(adfile, 'r'):
