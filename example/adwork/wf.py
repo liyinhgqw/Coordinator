@@ -8,5 +8,5 @@ class Coord(coord.client.Client):
   
 if __name__ == '__main__':
   proxy = Coord('10.0.2.15')
-  proxy.execute('RankSelect')
+  proxy.execute('Archive')
 #  proxy.execute_period_cond('Job1', proxy.need_input, 1.0)

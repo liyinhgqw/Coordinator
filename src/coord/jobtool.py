@@ -172,6 +172,7 @@ class JobTool(object):
   def runjob(self):
     self.pre_run()
     self.run()
+    print 'RUN COMPLETED.'
     self.post_run()
     
   def run(self):
