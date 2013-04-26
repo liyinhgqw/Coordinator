@@ -126,12 +126,12 @@ class JobTool(object):
     else:
       print 'Filesystem not supported'
        
-  def pre_run(self):
+  def pre_run(self, segcheck=True):
     # Tag for decide buffered seg num and make schedule decision
     for ipt in self.inputs.values():
       if ipt.mode == 1:
         nextseg = self.next_unfinished_seg(ipt.fs, ipt.path)
-        if nextseg is None:
+        if segcheck and nextseg is None:
           exit(1)
         self.tag_started(ipt.fs, nextseg)
         print 'input seg (STARTED)=', nextseg
@@ -139,7 +139,7 @@ class JobTool(object):
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
         print segs
-        if len(segs) <= 0:
+        if segcheck and len(segs) <= 0:
           exit(1)
         for seg in segs:
           print seg
@@ -154,7 +154,7 @@ class JobTool(object):
         self.outdirs[opt.alias].path = [nextseg]    # change to seg path
     return True
       
-  def post_run(self):
+  def post_run(self, segcheck=True):
     # Tag for decide next seg to process
     for ipt in self.inputs.values():
       if ipt.mode == 1:
@@ -163,17 +163,17 @@ class JobTool(object):
         print 'input seg (FINISHED)=', nextseg
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
-        if len(segs) <= 0:
+        if segcheck and len(segs) <= 0:
           exit(1)
         for seg in segs:
           self.tag_finished(ipt.fs, seg)
         print 'input seg (FINISHED)=', segs
 
-  def runjob(self):
-    self.pre_run()
+  def runjob(self, segcheck = True):
+    self.pre_run(segcheck)
     self.run()
     print 'RUN COMPLETED.'
-    self.post_run()
+    self.post_run(segcheck)
     
   def run(self):
     print 'runtime = ', self.runtime

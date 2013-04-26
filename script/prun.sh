@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 script=`dirname '$0'`
-HOME=`cd script/..; pwd`
+HOME=`cd $script/..; pwd`
 
 export PYTHONPATH=$PYTHONPATH:"$HOME/src"
 

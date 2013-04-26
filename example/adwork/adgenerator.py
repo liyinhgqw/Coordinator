@@ -7,8 +7,11 @@ Created on Apr 23, 2013
 import random
 import sys, os
 import coord.jobtool, coord.common
+from genericpath import getsize
 
 HOME = '/home/stud/workspace/Coordinator/example/adwork'
+ADS_PATH = os.path.join(HOME, 'ads')
+REST_PATH = os.path.join(HOME, 'select', 'rest')
 
 class AdGenerator(coord.jobtool.JobTool):
   def run(self):
@@ -38,9 +41,23 @@ class AdGenerator(coord.jobtool.JobTool):
     for i in range(batchsize):
       self.outfile.write(self.generate_record())  
 
+def check_success():
+  lfs = coord.common.LFS()
+  # Decide run or not according to the buffer size
+  totalsz = lfs.get_unfinished_dir_size(ADS_PATH, 'RankSelect')
+  if lfs.exists(REST_PATH):
+    totalsz += getsize(REST_PATH)
+  if totalsz > 1500000:
+    print 'block'
+    return False
+  return True
+
 if __name__ == '__main__':
   global batchsize
   batchsize = int(sys.argv[1])
   
-  adgenerator = AdGenerator("AdGenerator", None, None)
-  adgenerator.runjob()
+  CHECK = True
+  
+  if not CHECK or check_success():
+    adgenerator = AdGenerator("AdGenerator", None, None)
+    adgenerator.runjob()

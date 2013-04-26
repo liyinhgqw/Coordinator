@@ -36,6 +36,9 @@ class RankSelect(coord.jobtool.JobTool):
     adlist = []
     for ad in ads:
       adlist.append(str(ad))
+    
+    if len(adlist) <=0:
+      exit(1)
       
     # output
     outdir = self.outdirs['O1'].path[0]
@@ -91,4 +94,4 @@ if __name__ == '__main__':
   
   # only include dirs that need tags
   job = RankSelect(options.jobname, options.indir, options.outdir, options.runtime)
-  job.runjob()
+  job.runjob(False)

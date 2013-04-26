@@ -57,12 +57,13 @@ class LFS(object):
     return os.path.exists(os.path.join(dirname, DONE_TAG))
   
   def get_subdirs(self, dirname, checkdone = False):
+    if not os.path.exists(dirname):
+      return []
     return [sdir for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
             if not checkdone or self.is_done(os.path.join(dirname, sdir))]
   
   def get_abs_subdirs(self, dirname, checkdone = False):
-    return [os.path.join(dirname, sdir) for sdir in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, sdir)) 
-            if not checkdone or self.is_done(os.path.join(dirname, sdir))]  
+    return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone)]  
     
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
     return [sdir for sdir in self.get_subdirs(dirname, checkdone) if
@@ -74,10 +75,12 @@ class LFS(object):
                and not os.path.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     
   def get_subfiles(self, dirname):
+    if not os.path.exists(dirname):
+      return []
     return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
   
   def get_abs_subfiles(self, dirname):
-    return [os.path.join(dirname, sfile) for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
+    return [os.path.join(dirname, sfile) for sfile in self.get_subfiles(dirname) ]
   
 
   def get_subdir_num(self, dirname):
@@ -95,23 +98,27 @@ class LFS(object):
   # recursive
   def get_dir_size(self, dirname):
     size = 0L
-    for root, dirs, files in os.walk(dirname):
-      size += sum([getsize(join(root, name)) for name in files])
+    if os.path.exists(dirname):
+      for root, dirs, files in os.walk(dirname):
+        size += sum([getsize(join(root, name)) for name in files])
     return size
   
   # recursive
   def get_unfinished_dir_size(self, dirname, jobname = ''):
     size = 0L
-    for root, dirs, files in os.walk(dirname):
-      if not (jobname + FINISHED_TAG) in dirs: 
-        size += sum([getsize(join(root, name)) for name in files])
+    if os.path.exists(dirname):
+      for root, dirs, files in os.walk(dirname):
+        if not (jobname + FINISHED_TAG) in dirs: 
+          print '*', root,dirs, files
+          size += sum([getsize(join(root, name)) for name in files])
     return size
   
   def get_buffered_dir_size(self, dirname, jobname = ''):
     size = 0L
-    for root, dirs, files in os.walk(dirname):
-      if (not (jobname + FINISHED_TAG) in dirs) and (not (jobname + STARTED_TAG) in dirs): 
-        size += sum([getsize(join(root, name)) for name in files])
+    if os.path.exists(dirname):
+      for root, dirs, files in os.walk(dirname):
+        if (not (jobname + FINISHED_TAG) in dirs) and (not (jobname + STARTED_TAG) in dirs): 
+          size += sum([getsize(join(root, name)) for name in files])
     return size
   
   def exists(self, pathname):
