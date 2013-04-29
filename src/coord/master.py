@@ -60,8 +60,12 @@ class Master(object):
       for (jobname, jobinfo_pickled) in list(self.jobinfoDB.RangeIter(key_from=None, key_to=None)):
         jobinfo = unpickle(jobinfo_pickled)
         slavehost = jobinfo['Host']
-        if self.master.rpc_client.has_key(slavehost):
-          self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
+        if jobinfo['Dynamic'] != '' or slavehost.startswith('CPU') or slavehost.startswith('MEM'):
+          for slave_rpc in self.master.rpc_client.itervalues():
+            slave_rpc.register_job(jobname, jobinfo)
+        else:
+          if self.master.rpc_client.has_key(slavehost):
+            self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
           
     # Called from slaves
     def register_slave(self, handle, host, port):
@@ -71,7 +75,8 @@ class Master(object):
       handle.done(1)
       
     def find_dynamic_host(self, handle, criteria):
-      return self.master.find_dynamic_host_wo(criteria)
+      print '---------------------'
+      return handle.done(self.master.find_dynamic_host_wo(criteria))
     
     def set_dynamic_host(self, handle, jobname, host):
       try:
@@ -79,8 +84,9 @@ class Master(object):
         jobinfo = unpickle(jobinfo_pickled)
         jobinfo['Host'] = host
         self.jobinfoDB.Put(jobname, pickle(jobinfo))
+        handle.done(True)
       except KeyError:
-        handle.done()
+        handle.done(False)
       
     
   def __init__(self, port):
@@ -125,7 +131,9 @@ class Master(object):
     self.running = False
     
   def get_slave_stats(self):
-    for slavehost, slaverpc in self.rpc_client:
+    print self.rpc_client, "*******"
+    for slavehost, slaverpc in self.rpc_client.iteritems():
+      print slavehost, "##"
       self.slave_stats[slavehost] = slaverpc.get_slave_stat().wait()
     return self.slave_stats
   
@@ -139,13 +147,14 @@ class Master(object):
     mincpu = None
     minslave = None
     
-    for slavehost, slavestat in self.get_slave_stats():
+    for slavehost, slavestat in self.get_slave_stats().iteritems():
+      print slavestat, "&&"
       if slavestat.has_key(criteria):
         # TODO: for mem: '>'
         if mincpu is None or slavestat[criteria] < minslave:
           minslave = slavehost
           mincpu = slavestat[criteria]
-          
+    print 'minslave = ', minslave
     return minslave
 
 if __name__ == '__main__':

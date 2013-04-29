@@ -33,14 +33,16 @@ class JobInfo(object):
     self.command = jobinfo['Command']
     self.inputs = {}
     self.outputs = {}
-    
-    for ipt in jobinfo['Inputs']:
-      dinfo = self.parse(ipt)
-      self.inputs[dinfo.alias] = dinfo
-      
-    for opt in jobinfo['Outputs']:
-      dinfo = self.parse(opt)
-      self.outputs[dinfo.alias] = dinfo
+
+    if jobinfo['Inputs'] is not None:    
+      for ipt in jobinfo['Inputs']:
+        dinfo = self.parse(ipt)
+        self.inputs[dinfo.alias] = dinfo
+
+    if jobinfo['Outputs'] is not None:      
+      for opt in jobinfo['Outputs']:
+        dinfo = self.parse(opt)
+        self.outputs[dinfo.alias] = dinfo
       
   def __str__(self):
     ret =  'Command: ' + self.command + '\n' + 'Inputs: \n'
@@ -525,7 +527,7 @@ class Slave(object):
   
   def get_slave_stat_wo(self):
     stat = {}
-    stat['cpu'] = psutil.cpu_percent(0.5)
+    stat['CPU'] = psutil.cpu_percent(0.5)
     return stat
     
 if __name__ == '__main__':

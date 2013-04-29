@@ -65,12 +65,16 @@ class Client(object):
   # Equavalent to client_rpc.func(jobname)
   def call(self, func, jobname, *args, **kw):
     jobinfo = self.lookup(jobname)
+    print jobinfo
     host = jobinfo['Host']
     
     # check if set dynamic
+    print '%%%%%%%%%%%%%%%%%%%%%%%%%%% ', host
     if jobinfo['Dynamic'] != '' and func == 'execute':
-      if host == '':
+      if host is None or host == '':
+        print jobinfo['Dynamic'], '*'
         host = self.find_dynamic_host(jobinfo['Dynamic'])
+        print host, '**'
         self.set_dynamic_host(jobname, host)
       else:
         # check if set check_finished
@@ -81,7 +85,7 @@ class Client(object):
             host = self.find_dynamic_host(jobinfo['Dynamic'])
             self.set_dynamic_host(jobname, host)
     
-    if host == '':
+    if host is None or host == '':
       return None
     call_future = self._get_slave_rpc(host).call(func, jobname, *args, **kw)
     return call_future.wait()

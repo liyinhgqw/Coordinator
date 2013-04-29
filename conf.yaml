@@ -35,9 +35,9 @@ Archive:
 Dynamic:
   Host: CPU 
   Inputs: 
-  Ouputs:
-    - O = /home/stud/workspace/Coordinator/test/dynamic/out =
-  Command: python /home/stud/workspace/Coordinator/test/dynamic/dynrun.py
+  Outputs:
+    - O = /home/stud/workspace/Coordinator/test/dynamic/out 
+  Command: python /home/stud/workspace/Coordinator/example/dynamic/dynrun.py
 
 
 
