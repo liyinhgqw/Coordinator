@@ -133,7 +133,6 @@ class Master(object):
   def get_slave_stats(self):
     print self.rpc_client, "*******"
     for slavehost, slaverpc in self.rpc_client.iteritems():
-      print slavehost, "##"
       self.slave_stats[slavehost] = slaverpc.get_slave_stat().wait()
     return self.slave_stats
   
@@ -148,13 +147,12 @@ class Master(object):
     minslave = None
     
     for slavehost, slavestat in self.get_slave_stats().iteritems():
-      print slavestat, "&&"
       if slavestat.has_key(criteria):
         # TODO: for mem: '>'
         if mincpu is None or slavestat[criteria] < minslave:
           minslave = slavehost
           mincpu = slavestat[criteria]
-    print 'minslave = ', minslave
+    print 'dynamic lave = ', minslave
     return minslave
 
 if __name__ == '__main__':

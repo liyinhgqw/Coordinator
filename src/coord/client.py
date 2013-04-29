@@ -69,12 +69,9 @@ class Client(object):
     host = jobinfo['Host']
     
     # check if set dynamic
-    print '%%%%%%%%%%%%%%%%%%%%%%%%%%% ', host
     if jobinfo['Dynamic'] != '' and func == 'execute':
       if host is None or host == '':
-        print jobinfo['Dynamic'], '*'
         host = self.find_dynamic_host(jobinfo['Dynamic'])
-        print host, '**'
         self.set_dynamic_host(jobname, host)
       else:
         # check if set check_finished
@@ -83,6 +80,7 @@ class Client(object):
             return None
           else:
             host = self.find_dynamic_host(jobinfo['Dynamic'])
+            print 're-assign to slave: ', host
             self.set_dynamic_host(jobname, host)
     
     if host is None or host == '':
