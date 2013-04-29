@@ -30,12 +30,17 @@ class Master(object):
       for jobname, jobinfo in jobinfos.iteritems():
         if jobinfo.has_key('Host'):
           slavehost = jobinfo['Host']
+          slavehost.strip()
+          if slavehost.startswith('CPU') or slavehost.startswith('MEM'):
+            jobinfo['Dynamic'] = slavehost
+            jobinfo['Host'] = ''
+          else:
+            jobinfo['Dynamic'] = False
+            
           self.jobinfoDB.Put(jobname, pickle(jobinfo))
         else:
-          slavehost = self.master.find_lightest_load_slave()
-          assert slavehost is not None
-          jobinfo['Host'] = slavehost
-          self.jobinfoDB.Put(jobname, pickle(jobinfo))
+          print 'Must decide which host to run.'
+          exit(1)
           
         if self.master.rpc_client.has_key(slavehost):
           self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
@@ -64,6 +69,18 @@ class Master(object):
       self.master.rpc_client[host] = rpc.client.RPCClient(host, int(port))
       self.sync_jobinfo(host, int(port));
       handle.done(1)
+      
+    def find_dynamic_host(self, handle, criteria):
+      return self.master.find_dynamic_host_wo(criteria)
+    
+    def set_dynamic_host(self, handle, jobname, host):
+      try:
+        jobinfo_pickled = self.jobinfoDB.Get(jobname)
+        jobinfo = unpickle(jobinfo_pickled)
+        jobinfo['Host'] = host
+        self.jobinfoDB.Put(jobname, pickle(jobinfo))
+      except KeyError:
+        handle.done()
       
     
   def __init__(self, port):
@@ -109,24 +126,25 @@ class Master(object):
     
   def get_slave_stats(self):
     for slavehost, slaverpc in self.rpc_client:
-      self.slave_stats[slavehost] = slaverpc.get_slave_stat()
+      self.slave_stats[slavehost] = slaverpc.get_slave_stat().wait()
     return self.slave_stats
   
   def get_slave_stat(self, slavehost):
     if self.rpc_client.has_key(slavehost):
-      self.slave_stats[slavehost] = self.rpc_client[slavehost].get_slave_stat()
+      self.slave_stats[slavehost] = self.rpc_client[slavehost].get_slave_stat().wait()
     return self.slave.stats[slavehost]
       
       
-  def find_lightest_load_slave(self):
+  def find_dynamic_host_wo(self, criteria):
     mincpu = None
     minslave = None
-    self.get_slave_stats()
-    for slavehost, slavestat in self.slave_stats:
-      if slavestat.has_key('cpu'):
-        if mincpu is None or slavestat['cpu'] < minslave:
+    
+    for slavehost, slavestat in self.get_slave_stats():
+      if slavestat.has_key(criteria):
+        # TODO: for mem: '>'
+        if mincpu is None or slavestat[criteria] < minslave:
           minslave = slavehost
-          mincpu = slavestat['cpu']
+          mincpu = slavestat[criteria]
           
     return minslave
 

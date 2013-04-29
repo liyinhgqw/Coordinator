@@ -38,8 +38,7 @@ class Client(object):
     return _MethodCall(self, key)
     
   
-  def _get_slave_rpc(self, jobinfo):
-    host = jobinfo['Host']
+  def _get_slave_rpc(self, host):
     if not self.rpc_slave.has_key(host):
       self.rpc_slave[host] = rpc.client.RPCClient(host, coord.common.SLAVE_PORT)
     return self.rpc_slave[host]
@@ -54,13 +53,37 @@ class Client(object):
     else:
       raise Exception
     
+  def find_dynamic_host(self, criteria):
+    return self.rpc_client.find_dynamic_host(criteria).wait()
+  
+  def set_dynamic_host(self, jobname, host):
+    return self.rpc_client.set_dynamic_host(jobname, host).wait()
+    
   def getinfo(self, jobname, info):
     return self.lookup(jobname)[info]
   
   # Equavalent to client_rpc.func(jobname)
   def call(self, func, jobname, *args, **kw):
     jobinfo = self.lookup(jobname)
-    call_future = self._get_slave_rpc(jobinfo).call(func, jobname, *args, **kw)
+    host = jobinfo['Host']
+    
+    # check if set dynamic
+    if jobinfo['Dynamic'] != '' and func == 'execute':
+      if host == '':
+        host = self.find_dynamic_host(jobinfo['Dynamic'])
+        self.set_dynamic_host(jobname, host)
+      else:
+        # check if set check_finished
+        if True in args:
+          if self.call('is_running', jobname):
+            return None
+          else:
+            host = self.find_dynamic_host(jobinfo['Dynamic'])
+            self.set_dynamic_host(jobname, host)
+    
+    if host == '':
+      return None
+    call_future = self._get_slave_rpc(host).call(func, jobname, *args, **kw)
     return call_future.wait()
   
   # support recovery

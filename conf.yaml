@@ -31,6 +31,13 @@ Archive:
     - O1 = /home/stud/workspace/Coordinator/example/adwork/archive 
   Command: python /home/stud/workspace/Coordinator/example/adwork/archive.py
 
+---
+Dynamic:
+  Host: CPU 
+  Inputs: 
+  Ouputs:
+    - O = /home/stud/workspace/Coordinator/test/dynamic/out =
+  Command: python /home/stud/workspace/Coordinator/test/dynamic/dynrun.py
 
 
 
