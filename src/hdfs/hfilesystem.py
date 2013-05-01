@@ -203,3 +203,10 @@ class Hfilesystem(object):
     if r:
       libhdfs.hdfsFreeHosts(r)
     return ret
+  
+  def isFile(self, path):
+    return self.stat(path).mKind.kObjectKindFile == 'F'
+
+  def isDir(self, path):
+    return self.stat(path).mKind.kObjectKindFile == 'D'
+
