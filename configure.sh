@@ -17,7 +17,7 @@ sort | tr '\n' ':')
  
 export COORD_HOME=`dirname $0`
 export COORD_HOME=`cd $COORD_HOME; pwd`
-export PYHDFS_HOME=$COORD_HOME/src/python-hdfs/hdfs
+export PYHDFS_HOME=$COORD_HOME/src/hdfs
 export PYTHONPATH=${COORD_HOME}/src:$PYHDFS_HOME
 
 
