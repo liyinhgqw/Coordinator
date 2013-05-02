@@ -8,8 +8,11 @@ import os
 import socket
 import time, datetime
 from os.path import join, getsize
-from hdfs.hfile import Hfile
-from hdfs.hfilesystem import Hfilesystem
+try:
+  from hdfs.hfile import Hfile
+  from hdfs.hfilesystem import Hfilesystem
+except:
+  pass
 
 MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
@@ -68,14 +71,23 @@ class LFS(object):
     return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone)]  
     
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [sdir for sdir in self.get_subdirs(dirname, checkdone) if
+               not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
+    
+  def get_unfinished_abs_subdirs(self, dirname, jobname = '', checkdone = False):
     return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [sdir for sdir in self.get_subdirs(dirname, checkdone = False) if
+               not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
+               and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
+
+  def get_buffered_abs_subdirs(self, dirname, jobname = '', checkdone = False):
     return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone = False) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
-    
+       
   def get_subfiles(self, dirname):
     if not self.exists(dirname):
       return []
@@ -123,7 +135,7 @@ class LFS(object):
     return size
   
   def exists(self, pathname):
-    return self.exists(pathname)
+    return os.path.exists(pathname)
   
   
 class DFS(object):
@@ -163,7 +175,16 @@ class DFS(object):
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone = False) if
+    return [sdir for sdir in self.get_subdirs(dirname, checkdone = False) if
+               not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
+               and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
+    
+  def get_unfinished_abs_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [sdir for sdir in self.get_abs_subdirs(dirname, checkdone) if
+               not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
+    
+  def get_buffered_abs_subdirs(self, dirname, jobname = '', checkdone = False):
+    return [os.path.join(dirname, sdir) for sdir in self.get_abs_subdirs(dirname, checkdone = False) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     

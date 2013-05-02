@@ -97,6 +97,7 @@ class JobTool(object):
     for outdir in self.outdirs.values():
       outdir.path = [outdir.path]
     self.runtime = runtime
+    
       
   def deserialize(self, dirliststr):
     dirs = {}
@@ -138,16 +139,13 @@ class JobTool(object):
         self.indirs[ipt.alias].path = [nextseg]    # change to seg path
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
-        print segs
         if segcheck and len(segs) <= 0:
           exit(1)
         for seg in segs:
-          print seg
           self.tag_started(ipt.fs, seg)
         print 'input seg (STARTED)=', segs
         self.indirs[ipt.alias].path = segs    # change to seg path
         
-
     for opt in self.outputs.values():
       if opt.mode == 1:
         nextseg = self.next_seg(opt.fs, opt.path)

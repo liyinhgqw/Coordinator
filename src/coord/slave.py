@@ -13,7 +13,7 @@ import rpc.client
 import coord.common
 import coord.jobstat 
 import coord.jobtool
-import os
+import os, sys
 import threading
 from functools import partial
 import copy
@@ -286,6 +286,7 @@ class Slave(object):
     return sdir
     
   def runjob(self, jobname, inputs, outputs):
+    print 'Run Job'
     lfs = coord.common.LFS()
     elapse = -1
     ret = -1
@@ -538,5 +539,6 @@ class Slave(object):
     return stat
     
 if __name__ == '__main__':
-  slave = Slave(coord.common.localhost(), coord.common.MASTER_PORT)
+  host = sys.argv[1]
+  slave = Slave(host, coord.common.MASTER_PORT)
   slave.start()

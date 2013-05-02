@@ -69,7 +69,7 @@ class Client(object):
     host = jobinfo['Host']
     
     # check if set dynamic
-    if jobinfo['Dynamic'] != '' and func == 'execute':
+    if jobinfo.has_key('Dyanmic') and jobinfo['Dynamic'] is not None and func == 'execute':
       if host is None or host == '':
         host = self.find_dynamic_host(jobinfo['Dynamic'])
         self.set_dynamic_host(jobname, host)

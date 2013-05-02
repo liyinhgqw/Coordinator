@@ -29,13 +29,13 @@ class Master(object):
     def register_job(self, handle, jobinfos):
       for jobname, jobinfo in jobinfos.iteritems():
         if jobinfo.has_key('Host'):
-          slavehost = jobinfo['Host']
-          slavehost.strip()
+          slavehost = jobinfo['Host'].strip()
+          print slavehost, '*'
           if slavehost.startswith('CPU') or slavehost.startswith('MEM'):
             jobinfo['Dynamic'] = slavehost
             jobinfo['Host'] = ''
           else:
-            jobinfo['Dynamic'] = False
+            jobinfo['Dynamic'] = None
             
           self.jobinfoDB.Put(jobname, pickle(jobinfo))
         else:
@@ -59,6 +59,7 @@ class Master(object):
     def sync_jobinfo(self, host, port): 
       for (jobname, jobinfo_pickled) in list(self.jobinfoDB.RangeIter(key_from=None, key_to=None)):
         jobinfo = unpickle(jobinfo_pickled)
+        print jobinfo, '%'
         slavehost = jobinfo['Host']
         if jobinfo['Dynamic'] != '' or slavehost.startswith('CPU') or slavehost.startswith('MEM'):
           for slave_rpc in self.master.rpc_client.itervalues():

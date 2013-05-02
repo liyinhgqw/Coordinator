@@ -15,10 +15,18 @@ RankSelect:
     - O1 = /home/stud/workspace/Coordinator/example/adwork/select =
   Command: python /home/stud/workspace/Coordinator/example/adwork/rankselect.py
 ---
-Filter:
+Identity1:
   Host: 10.0.2.15
   Inputs:
     - I1 = /home/stud/workspace/Coordinator/example/adwork/select =
+  Outputs:
+    - O1 = /home/stud/workspace/Coordinator/example/adwork/identity1 =
+  Command: python /home/stud/workspace/Coordinator/example/adwork/identity.py
+---
+Filter:
+  Host: 10.0.2.15
+  Inputs:
+    - I1 = /home/stud/workspace/Coordinator/example/adwork/identity1 =
   Outputs:
     - O1 = /home/stud/workspace/Coordinator/example/adwork/filter =
   Command: python /home/stud/workspace/Coordinator/example/adwork/filter.py
