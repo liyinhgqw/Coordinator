@@ -68,11 +68,11 @@ class LFS(object):
     return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone)]  
     
   def get_unfinished_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [sdir for sdir in self.get_subdirs(dirname, checkdone) if
+    return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [sdir for sdir in self.get_subdirs(dirname, checkdone = False) if
+    return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone = False) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     
@@ -163,14 +163,14 @@ class DFS(object):
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))]
     
   def get_buffered_subdirs(self, dirname, jobname = '', checkdone = False):
-    return [sdir for sdir in self.get_subdirs(dirname, checkdone = False) if
+    return [os.path.join(dirname, sdir) for sdir in self.get_subdirs(dirname, checkdone = False) if
                not self.exists(os.path.join(dirname, sdir, jobname + FINISHED_TAG))
                and not self.exists(os.path.join(dirname, sdir, jobname + STARTED_TAG))]
     
   def get_subfiles(self, dirname):
     if not self.exists(dirname):
       return []
-    return [sfile for sfile in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, sfile)) ]
+    return [sfile for sfile in self.hfs.listdir(dirname) if self.hfs.isFile(os.path.join(dirname, sfile)) ]
   
   def get_abs_subfiles(self, dirname):
     return [os.path.join(dirname, sfile) for sfile in self.get_subfiles(dirname) ]
@@ -192,25 +192,35 @@ class DFS(object):
   def get_dir_size(self, dirname):
     size = 0L
     if self.exists(dirname):
-      for root, dirs, files in os.walk(dirname):
-        size += sum([getsize(join(root, name)) for name in files])
+      for node in self.hfs.listdir(dirname):
+        if self.hfs.isFile(node):
+          size += self.hfs.stat(node).mSize
+        else:
+          size += self.get_dir_size(node)
+      
     return size
   
   # recursive
   def get_unfinished_dir_size(self, dirname, jobname = ''):
     size = 0L
-    if self.exists(dirname):
-      for root, dirs, files in os.walk(dirname):
-        if not (jobname + FINISHED_TAG) in dirs: 
-          size += sum([getsize(join(root, name)) for name in files])
+    if self.exists(dirname) and not self.exists(os.path.join(dirname, jobname + FINISHED_TAG)):
+      for node in self.hfs.listdir(dirname):
+        if self.hfs.isFile(node):
+          size += self.hfs.stat(node).mSize
+        else:
+          size += self.get_dir_size(node)
+      
     return size
   
   def get_buffered_dir_size(self, dirname, jobname = ''):
     size = 0L
-    if self.exists(dirname):
-      for root, dirs, files in os.walk(dirname):
-        if (not (jobname + FINISHED_TAG) in dirs) and (not (jobname + STARTED_TAG) in dirs): 
-          size += sum([getsize(join(root, name)) for name in files])
+    if self.exists(dirname) and not self.exists(os.path.join(dirname, jobname + FINISHED_TAG)):
+      for node in self.hfs.listdir(dirname):
+        if self.hfs.isFile(node):
+          size += self.hfs.stat(node).mSize
+        else:
+          size += self.get_dir_size(node)
+      
     return size
   
   def exists(self, pathname):
