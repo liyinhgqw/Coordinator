@@ -224,6 +224,7 @@ class Slave(object):
     self.runningjobs = Set()
     self.milestone = Set()
     self.jobstats = {}
+    self.jobtime = {}
     self._stopjob = {}
     if (not os.path.exists(coord.common.SLAVE_META_PATH)):
       os.mkdir(coord.common.SLAVE_META_PATH)
@@ -296,6 +297,12 @@ class Slave(object):
       print cmd
       ret = os.system(cmd)
       elapse = coord.common.curtime() - st_time
+      # thoughput
+      now = coord.common.curtime()
+      if self.jobtime.has_key(jobname):
+        self.jobstats[jobname].update_throughput(now - self.jobtime[jobname])
+      self.jobtime[jobname] = now
+        
     except:
       pass
     finally:

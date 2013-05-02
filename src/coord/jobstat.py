@@ -22,6 +22,7 @@ class JobStat(object):
     # avg stats
     self.runtime = -1
     self.backuprate = 0;
+    self.throughput = 0;
     self._backup = -1
     
     self.lock = threading.Lock()
@@ -37,7 +38,7 @@ class JobStat(object):
     
   def update(self, elapse):
     if elapse > 0:
-      if self.runtime < 0:
+      if self.runtime <= 0:
         self.runtime = elapse
       else:
         self.runtime = self.runtime * 0.6 + elapse * 0.4
@@ -50,6 +51,14 @@ class JobStat(object):
     print 'runtime = ', self.runtime
     print 'backuprate = ', self.backuprate
   
+  def update_throughput(self, period):
+    if period > 0:
+      if self.throughput <= 0:
+        self.throughput = period
+      else:
+        self.throughput = self.throughput * 0.6 + period * 0.4
+    print 'throughput = ', self.throughput
+    
   def start(self):
     t = threading.Timer(self.interval, self.update_backuprate)
     t.start()
