@@ -16,9 +16,8 @@ class Identity(coord.jobtool.JobTool):
     destfile = open(os.path.join(destdir, 'ads'), 'w')
     for adfile in adlist:
       for ad in open(adfile, 'r'):
-        print self.jobname, '%', destfile.name, '%', ad
         time.sleep(0.02)
-        destfile.write(ad + '\n')
+        destfile.write(ad)
     destfile.flush()
     destfile.close()
     

@@ -56,6 +56,8 @@ class LFS(object):
       os.rmdir(d)
     
   def rename(self, srcpath, destpath):
+    if os.path.exists(destpath):
+      self.rm_rf(destpath)
     os.rename(srcpath, destpath)
     
   def is_done(self, dirname):
@@ -156,6 +158,8 @@ class DFS(object):
     self.rmdir(d)
     
   def rename(self, srcpath, destpath):
+    if os.path.exists(destpath):
+      self.rm_rf(destpath)
     self.hfs.rename(srcpath, destpath)
     
   def is_done(self, dirname):

@@ -134,15 +134,17 @@ class JobTool(object):
       fs.mkdir(os.path.join(path, self.jobname + coord.common.FINISHED_TAG))
       
   def mkdir(self, fs, path):
+    fsstr = fs
     if fs == 'lfs':
       fs = coord.common.LFS()
     else:
+      exit(1)
       fs = coord.common.DFS()
       
     tmpdir = path + '_tmp'
     try:
       fs.mkdir(tmpdir)
-      self.tmpdir.append((fs, tmpdir))
+      self.tmpdir.append((fsstr, tmpdir))
     except:
       print 'Cannot make directory.'
       exit(1)

@@ -286,7 +286,7 @@ class Slave(object):
     return sdir
     
   def runjob(self, jobname, inputs, outputs):
-    print 'Run Job'
+    print 'Run Job: ', jobname
     lfs = coord.common.LFS()
     elapse = -1
     ret = -1
