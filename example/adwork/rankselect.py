@@ -45,7 +45,7 @@ class RankSelect(coord.jobtool.JobTool):
       
     # output
     outdir = self.outdirs['O1'].path[0]
-    lfs.mkdir(outdir)
+    outdir = self.mkdir('lfs', outdir)
     selectfile = open(os.path.join(outdir, 'sad'), 'w')
     selectfile.writelines(adlist[0:SELECT_NUM])
     restfile = open(os.path.join(self.outputs['O1'].path, 'rest'), 'w')

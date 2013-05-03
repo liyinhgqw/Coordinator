@@ -3,6 +3,9 @@
 # PYTHON
 export PYTHON="/usr/bin/env python"
 
+# JAVA
+JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-amd64
+
 # Hadoop
 if [ "$HADOOP_HOME" = "" ]; then
 HADOOP_HOME=/home/liyinhgqw/hadoop-1.1.0

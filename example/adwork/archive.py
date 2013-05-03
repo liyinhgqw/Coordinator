@@ -40,7 +40,7 @@ class Archive(coord.jobtool.JobTool):
     # output
     outdir = self.outdirs['O1'].path[0]
     print '^^^', outdir
-    lfs.mkdir(outdir)
+    outdir = self.mkdir('lfs', outdir)
     open(os.path.join(outdir, 'aad'), 'w').writelines(adlist)
 
 MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [ -t <runtime>]"

@@ -8,11 +8,8 @@ import os
 import socket
 import time, datetime
 from os.path import join, getsize
-try:
-  from hdfs.hfile import Hfile
-  from hdfs.hfilesystem import Hfilesystem
-except:
-  pass
+from hdfs.hfile import Hfile
+from hdfs.hfilesystem import Hfilesystem
 
 MASTER_PORT = 9999
 SLAVE_PORT = MASTER_PORT + 1
@@ -57,6 +54,9 @@ class LFS(object):
         else:
           os.unlink(path)
       os.rmdir(d)
+    
+  def rename(self, srcpath, destpath):
+    os.rename(srcpath, destpath)
     
   def is_done(self, dirname):
     return self.exists(os.path.join(dirname, DONE_TAG))
@@ -154,6 +154,9 @@ class DFS(object):
       
   def rm_rf(self, d):
     self.rmdir(d)
+    
+  def rename(self, srcpath, destpath):
+    self.hfs.rename(srcpath, destpath)
     
   def is_done(self, dirname):
     return self.exists(os.path.join(dirname, DONE_TAG))

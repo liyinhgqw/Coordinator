@@ -98,6 +98,7 @@ class JobTool(object):
       outdir.path = [outdir.path]
     self.runtime = runtime
     
+    self.tmpdir = []
       
   def deserialize(self, dirliststr):
     dirs = {}
@@ -109,24 +110,45 @@ class JobTool(object):
   
   def tag_started(self, fs, path):
     if fs == 'lfs':
-      lfs = coord.common.LFS()
-      lfs.mkdir(os.path.join(path, self.jobname + coord.common.STARTED_TAG))
+      fs = coord.common.LFS()
     elif fs == 'dfs':
-      dfs = coord.common.DFS()
-      dfs.mkdir(os.path.join(path, self.jobname + coord.common.STARTED_TAG))      
+      fs = coord.common.DFS()
     else:
       print 'Filesystem not supported'
+      fs = None
+    
+    if fs is not None:  
+      fs.mkdir(os.path.join(path, self.jobname + coord.common.STARTED_TAG))
+
       
   def tag_finished(self, fs, path):
     if fs == 'lfs':
-      lfs = coord.common.LFS()
-      lfs.mkdir(os.path.join(path, self.jobname + coord.common.FINISHED_TAG))
+      fs = coord.common.LFS()
     elif fs == 'dfs':
-      dfs = coord.common.DFS()
-      dfs.mkdir(os.path.join(path, self.jobname + coord.common.FINISHED_TAG))      
+      fs = coord.common.DFS()
     else:
       print 'Filesystem not supported'
-       
+      fs = None
+    
+    if fs is not None:  
+      fs.mkdir(os.path.join(path, self.jobname + coord.common.FINISHED_TAG))
+      
+  def mkdir(self, fs, path):
+    if fs == 'lfs':
+      fs = coord.common.LFS()
+    else:
+      fs = coord.common.DFS()
+      
+    tmpdir = path + '_tmp'
+    try:
+      fs.mkdir(tmpdir)
+      self.tmpdir.append((fs, tmpdir))
+    except:
+      print 'Cannot make directory.'
+      exit(1)
+    
+    return tmpdir
+        
   def pre_run(self, segcheck=True):
     # Tag for decide buffered seg num and make schedule decision
     for ipt in self.inputs.values():
@@ -153,6 +175,16 @@ class JobTool(object):
     return True
       
   def post_run(self, segcheck=True):
+    # relink tmpdir
+    for fs, tmpdir in self.tmpdir:
+      if fs == 'lfs':
+        fs = coord.common.LFS()
+      else:
+        fs = coord.common.DFS()
+      fs.rename(tmpdir, tmpdir[:-4])
+      
+    self.tmpdir = []
+    
     # Tag for decide next seg to process
     for ipt in self.inputs.values():
       if ipt.mode == 1:
@@ -204,32 +236,29 @@ class JobTool(object):
       
   def next_unfinished_seg(self, fs, pdir):
     if fs == 'lfs':
-      lfs = coord.common.LFS()
-      segs = [int(seg) for seg in lfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+      fs = coord.common.LFS()
     elif fs == 'dfs':
-      dfs = coord.common.DFS()
-      segs = [int(seg) for seg in dfs.get_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+      fs = coord.common.DFS()
 
+    segs = [int(seg) for seg in fs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
     return None if len(segs) <=0 else os.path.join(pdir, str(min(segs)))
   
   def unfinished_seg(self, fs, pdir):
     if fs == 'lfs':
-      lfs = coord.common.LFS()
-      segs = [int(seg) for seg in lfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+      fs = coord.common.LFS()
     elif fs == 'dfs':
-      dfs = coord.common.DFS()
-      segs = [int(seg) for seg in dfs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
-    segs = map(lambda seg: os.path.join(pdir, str(seg)), segs)
-    return segs
+      fs = coord.common.DFS()
+
+    segs = [int(seg) for seg in fs.get_unfinished_subdirs(pdir, self.jobname) if self.check_valid_seg(seg)]
+    return map(lambda seg: os.path.join(pdir, str(seg)), segs)
   
   # not necessary
   def touch_dir(self, fs, dirname):
     if fs == 'lfs':
-      lfs = coord.common.LFS()
-      lfs.mkdir(dirname)
+      fs = coord.common.LFS()
     else:
-      dfs = coord.common.DFS()
-      dfs.mkdir(dirname)
+      fs = coord.common.DFS()
+    fs.mkdir(dirname)
   
 if __name__ == '__main__':
   optParser = OptionParser(MSG_USAGE)
