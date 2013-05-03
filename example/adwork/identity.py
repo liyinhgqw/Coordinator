@@ -17,7 +17,6 @@ class Identity(coord.jobtool.JobTool):
       for ad in open(adfile, 'r'):
         time.sleep(0.02)
         destfile.write(ad)
-      adfile.close()
     destfile.close()
     
 MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [ -t <runtime>]"
