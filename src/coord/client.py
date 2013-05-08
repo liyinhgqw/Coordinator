@@ -117,12 +117,19 @@ class Client(object):
         self.log_recovery(jobname)    
   
   # support recovery
-  def execute_dep(self, jobname, depname, check_finished = True, *args, **kw):
+  def execute_dep(self, jobname, depname, timeout = None, check_finished = True, *args, **kw):
+    isrun = True
     if not self.recovery or not self.check_recovery(jobname):
+      timesum = 0
       while not self.call('is_milestone', depname):
         time.sleep(coord.common.RETRY_INTERVAL)
+        timesum += coord.common.RETRY_INTERVAL
+        if timeout is not True and timesum > timeout:
+          isrun = False
+          break
       print 'exec'
-      self.call('execute', jobname, check_finished)
+      if isrun:
+        self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)      
   
