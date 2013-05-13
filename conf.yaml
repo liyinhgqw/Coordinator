@@ -23,26 +23,10 @@ Identity1:
     - O1 = /home/stud/workspace/Coordinator/example/adwork/identity1 =
   Command: python /home/stud/workspace/Coordinator/example/adwork/identity.py
 ---
-Identity2:
-  Host: 10.0.2.15
-  Inputs:
-    - I1 = /home/stud/workspace/Coordinator/example/adwork/identity1 =
-  Outputs:
-    - O1 = /home/stud/workspace/Coordinator/example/adwork/identity2 =
-  Command: python /home/stud/workspace/Coordinator/example/adwork/identity.py
----
-Identity3:
-  Host: 10.0.2.15
-  Inputs:
-    - I1 = /home/stud/workspace/Coordinator/example/adwork/identity2 =
-  Outputs:
-    - O1 = /home/stud/workspace/Coordinator/example/adwork/identity3 =
-  Command: python /home/stud/workspace/Coordinator/example/adwork/identity.py
----
 Filter:
   Host: 10.0.2.15
   Inputs:
-    - I1 = /home/stud/workspace/Coordinator/example/adwork/identity3 =
+    - I1 = /home/stud/workspace/Coordinator/example/adwork/identity1 =
   Outputs:
     - O1 = /home/stud/workspace/Coordinator/example/adwork/filter =
   Command: python /home/stud/workspace/Coordinator/example/adwork/filter.py

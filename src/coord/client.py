@@ -65,7 +65,7 @@ class Client(object):
   # Equavalent to client_rpc.func(jobname)
   def call(self, func, jobname, *args, **kw):
     jobinfo = self.lookup(jobname)
-    print jobinfo
+#    print jobinfo
     host = jobinfo['Host']
     
     # check if set dynamic
@@ -80,7 +80,7 @@ class Client(object):
             return None
           else:
             host = self.find_dynamic_host(jobinfo['Dynamic'])
-            print 're-assign to slave: ', host
+#            print 're-assign to slave: ', host
             self.set_dynamic_host(jobname, host)
     
     if host is None or host == '':
@@ -91,7 +91,7 @@ class Client(object):
   # support recovery
   def execute(self, jobname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
-      print 'exec'
+#      print 'exec'
       self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)
@@ -101,7 +101,7 @@ class Client(object):
   def execute_cond(self, jobname, cond, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
       if cond(jobname, *args, **kw):
-        print 'exec', jobname
+#        print 'exec', jobname
         self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)
@@ -111,7 +111,7 @@ class Client(object):
     if not self.recovery or not self.check_recovery(jobname):
       while not cond(jobname, *args, **kw):
         time.sleep(lfs = coord.common.LFS())
-      print 'exec'
+#      print 'exec'
       self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)    
@@ -127,7 +127,7 @@ class Client(object):
         if timeout is not True and timesum > timeout:
           isrun = False
           break
-      print 'exec'
+#      print 'exec'
       if isrun:
         self.call('execute', jobname, check_finished)
       if self.recovery:
@@ -187,6 +187,6 @@ if __name__ == '__main__':
 #  print client.call('get_input_size', 'Job1')
 #  print client.call('get_input_totalsize', 'Job1')
 #  print client.call('get_input_subdirnum', 'Job1')
-  print client.call('get_input_subdirtotalnum', 'Job1')
+#  print client.call('get_input_subdirtotalnum', 'Job1')
 #  client.call('period_execute', 'Job1', 5.0)  
   client.call('execute', 'Job1')

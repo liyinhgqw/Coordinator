@@ -26,7 +26,7 @@ class JobConf(object):
   def parse_config(self):
     f = open(self.filename, "r")
     for fileinfo in yaml.load_all(f): 
-      print 'ok', fileinfo
+#      print 'ok', fileinfo
       self.register_job(fileinfo)
   
   def register_job(self, fileinfo):

@@ -9,6 +9,7 @@ from optparse import OptionParser
 
 SELECT_NUM = 100
 
+
 class Ad(object):
   def __init__(self, id, name, bid, body):
     self.id = id
@@ -20,7 +21,6 @@ class Ad(object):
     
 class RankSelect(coord.jobtool.JobTool):
   def run(self):
-    print 'RankSelect Running.'
     lfs = coord.common.LFS()
     adlist = []
     for indir in self.indirs['I1'].path:

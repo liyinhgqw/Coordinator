@@ -12,7 +12,8 @@ class Coord(coord.client.Client):
       
 if __name__ == '__main__':
   proxy = Coord('10.0.2.15')
-  proxy.execute_period_cond('RankSelect', proxy.need_input, 0.1, dep = 'Filter')
+  proxy.execute_period_cond('RankSelect', proxy.need_input, 0.1, dep = 'Identity1')
+  proxy.execute_period_cond('Identity1', proxy.need_input, 0.1, dep = 'Filter')
   proxy.execute_period_cond('Filter', proxy.need_input, 0.1, dep = 'Archive')
   proxy.execute_period('Archive', interval = 0.1)
   

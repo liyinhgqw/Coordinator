@@ -38,7 +38,6 @@ class Filter(coord.jobtool.JobTool):
       
     # output
     outdir = self.outdirs['O1'].path[0]
-    print '^^^', outdir
     outdir = self.mkdir('lfs', outdir)
     open(os.path.join(outdir, 'fad'), 'w').writelines(adlist)
     

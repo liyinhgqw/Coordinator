@@ -159,7 +159,7 @@ class JobTool(object):
         if segcheck and nextseg is None:
           exit(1)
         self.tag_started(ipt.fs, nextseg)
-        print 'input seg (STARTED)=', nextseg
+#        print 'input seg (STARTED)=', nextseg
         self.indirs[ipt.alias].path = [nextseg]    # change to seg path
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
@@ -167,7 +167,7 @@ class JobTool(object):
           exit(1)
         for seg in segs:
           self.tag_started(ipt.fs, seg)
-        print 'input seg (STARTED)=', segs
+#        print 'input seg (STARTED)=', segs
         self.indirs[ipt.alias].path = segs    # change to seg path
         
     for opt in self.outputs.values():
@@ -192,14 +192,14 @@ class JobTool(object):
       if ipt.mode == 1:
         nextseg = self.next_unfinished_seg(ipt.fs, ipt.path)
         self.tag_finished(ipt.fs, nextseg)
-        print 'input seg (FINISHED)=', nextseg
+#        print 'input seg (FINISHED)=', nextseg
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
         if segcheck and len(segs) <= 0:
           exit(1)
         for seg in segs:
           self.tag_finished(ipt.fs, seg)
-        print 'input seg (FINISHED)=', segs
+#        print 'input seg (FINISHED)=', segs
 
   def runjob(self, segcheck = True):
     self.pre_run(segcheck)
@@ -208,10 +208,10 @@ class JobTool(object):
     self.post_run(segcheck)
     
   def run(self):
-    print 'runtime = ', self.runtime
+#    print 'runtime = ', self.runtime
     time.sleep(self.runtime)
-    print self.inputs['I1'].fs, self.inputs['I1'].path
-    print 'finished'
+#    print self.inputs['I1'].fs, self.inputs['I1'].path
+#    print 'finished'
     
   def check_valid_seg(self, seg):
     try:

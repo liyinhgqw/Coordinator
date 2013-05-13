@@ -30,7 +30,7 @@ class Master(object):
       for jobname, jobinfo in jobinfos.iteritems():
         if jobinfo.has_key('Host'):
           slavehost = jobinfo['Host'].strip()
-          print slavehost, '*'
+#          print slavehost, '*'
           if slavehost.startswith('CPU') or slavehost.startswith('MEM'):
             jobinfo['Dynamic'] = slavehost
             jobinfo['Host'] = ''
@@ -45,7 +45,7 @@ class Master(object):
         if self.master.rpc_client.has_key(slavehost):
           self.master.rpc_client[slavehost].register_job(jobname, jobinfo)
           
-      print unpickle(self.jobinfoDB.Get(jobname))
+#      print unpickle(self.jobinfoDB.Get(jobname))
       handle.done(1)
       
       
@@ -59,7 +59,7 @@ class Master(object):
     def sync_jobinfo(self, host, port): 
       for (jobname, jobinfo_pickled) in list(self.jobinfoDB.RangeIter(key_from=None, key_to=None)):
         jobinfo = unpickle(jobinfo_pickled)
-        print jobinfo, '%'
+#        print jobinfo, '%'
         slavehost = jobinfo['Host']
         if jobinfo['Dynamic'] != '' or slavehost.startswith('CPU') or slavehost.startswith('MEM'):
           for slave_rpc in self.master.rpc_client.itervalues():
@@ -76,7 +76,6 @@ class Master(object):
       handle.done(1)
       
     def find_dynamic_host(self, handle, criteria):
-      print '---------------------'
       return handle.done(self.master.find_dynamic_host_wo(criteria))
     
     def set_dynamic_host(self, handle, jobname, host):
@@ -132,7 +131,6 @@ class Master(object):
     self.running = False
     
   def get_slave_stats(self):
-    print self.rpc_client, "*******"
     for slavehost, slaverpc in self.rpc_client.iteritems():
       self.slave_stats[slavehost] = slaverpc.get_slave_stat().wait()
     return self.slave_stats
@@ -153,7 +151,7 @@ class Master(object):
         if mincpu is None or slavestat[criteria] < minslave:
           minslave = slavehost
           mincpu = slavestat[criteria]
-    print 'dynamic lave = ', minslave
+#    print 'dynamic lave = ', minslave
     return minslave
 
 if __name__ == '__main__':

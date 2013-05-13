@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import os, sys
 import math
 import numpy as np
@@ -13,7 +14,7 @@ if len(sys.argv) > 2:
   num = int(sys.argv[2])
 else:
   num = -1
-  cp
+  
 ads = []
 bids = []
 cnt = 0

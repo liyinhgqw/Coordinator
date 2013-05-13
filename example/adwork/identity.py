@@ -10,13 +10,12 @@ class Identity(coord.jobtool.JobTool):
   def run(self):
     lfs = coord.common.LFS()
     adlist = lfs.get_abs_subfiles(self.indirs['I1'].path[0])
-    print self.jobname, "**", adlist
     destdir = self.outdirs['O1'].path[0]
     destdir = self.mkdir('lfs', destdir)
     destfile = open(os.path.join(destdir, 'ads'), 'w')
     for adfile in adlist:
       for ad in open(adfile, 'r'):
-        time.sleep(0.02)
+#        time.sleep(0.02)
         destfile.write(ad)
     destfile.flush()
     destfile.close()

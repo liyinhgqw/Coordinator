@@ -93,7 +93,7 @@ class Slave(object):
       
     def delay_execute(self, handle, jobname, timetpl, check=True):
       _execute = partial(self.slave.execute_wo, jobname, check)
-      print 'delay execute', coord.common.delay(timetpl)
+#      print 'delay execute', coord.common.delay(timetpl)
       t = threading.Timer(coord.common.delay(timetpl), _execute)
       t.start()
       handle.done(True)
@@ -102,7 +102,7 @@ class Slave(object):
       self.slave._stopjob[jobname] = False
       # do not check finished for the first round
       ret = self.slave.execute_wo(jobname)
-      print 'do period execute.', ret
+#      print 'do period execute.', ret
       _period_execute = partial(self.slave.period_execute_wo, jobname, interval, check)
       t = threading.Timer(interval, _period_execute)
       t.start()
@@ -261,6 +261,7 @@ class Slave(object):
             if os.path.isdir(dirname) and dirname.endswith(coord.common.STARTED_TAG)]
     jobs = map(self.find_job_from_tag, jobs)
     for job in jobs:
+      self.runningjobs.add(job)
       self.execute_wo(job, False)
     
   def get_jobinfo(self, jobname):
@@ -286,23 +287,24 @@ class Slave(object):
     return sdir
     
   def runjob(self, jobname, inputs, outputs):
-    print 'Run Job: ', jobname
+#    print 'Run Job: ', jobname
     lfs = coord.common.LFS()
     elapse = -1
     ret = -1
     try:
       st_time = coord.common.curtime()
-      print self.serialize(inputs)
-      print self.serialize(outputs)
+#      print self.serialize(inputs)
+#      print self.serialize(outputs)
       cmd = self.jobmap[jobname].command + " -n " + jobname + " -i '" + self.serialize(inputs) + "' -o '" + self.serialize(outputs) + "'"
-      print cmd
+#      print cmd
       ret = os.system(cmd)
       elapse = coord.common.curtime() - st_time
       # thoughput
-      now = coord.common.curtime()
-      if self.jobtime.has_key(jobname):
-        self.jobstats[jobname].update_throughput(now - self.jobtime[jobname])
-      self.jobtime[jobname] = now
+      if ret == 0:
+        now = coord.common.curtime()
+        if self.jobtime.has_key(jobname):
+          self.jobstats[jobname].update_throughput(now - self.jobtime[jobname])
+        self.jobtime[jobname] = now
         
     except:
       pass
@@ -321,7 +323,7 @@ class Slave(object):
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):
       return False
-    print 'Execute:', jobname
+#    print 'Execute:', jobname
     # Prerun
     # record job status in mem and tag
     self.runningjobs.add(jobname)
@@ -337,7 +339,7 @@ class Slave(object):
       self._stopjob[jobname] = False
     else:
       status = self.execute_wo(jobname, check)
-      print 'do period execute:', jobname
+#      print 'do period execute:', jobname
       _period_execute = partial(self.period_execute_wo, jobname, interval)
       t = threading.Timer(interval, _period_execute)
       t.start()

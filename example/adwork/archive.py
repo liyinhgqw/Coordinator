@@ -24,6 +24,10 @@ class Archive(coord.jobtool.JobTool):
     adlist = []
     for indir in self.indirs['I1'].path:
       adlist.extend(lfs.get_abs_subfiles(indir))
+    
+    if len(adlist) < 1:
+      exit(1)
+    
     if lfs.exists(os.path.join(self.outputs['O1'].path, 'aad')):
       adlist.append(os.path.join(self.outputs['O1'].path, 'aad'))
     ads = []
@@ -39,7 +43,6 @@ class Archive(coord.jobtool.JobTool):
       
     # output
     outdir = self.outdirs['O1'].path[0]
-    print '^^^', outdir
     outdir = self.mkdir('lfs', outdir)
     open(os.path.join(outdir, 'aad'), 'w').writelines(adlist)
 
