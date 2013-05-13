@@ -31,6 +31,7 @@ class DirInfo(object):
 class JobInfo(object):
   def __init__(self, jobinfo):
     self.command = jobinfo['Command']
+    self.isdynamic = jobinfo.has_key('Dynamic') and jobinfo['Dynamic'] != ''
     self.inputs = {}
     self.outputs = {}
 
@@ -262,8 +263,13 @@ class Slave(object):
             if os.path.isdir(dirname) and dirname.endswith(coord.common.STARTED_TAG)]
     jobs = map(self.find_job_from_tag, jobs)
     for job in jobs:
-      self.runningjobs.add(job)
-      self.execute_wo(job, False)
+      jobinfo = self.jobmap['job']
+      if not jobinfo.isdynamic:
+        self.runningjobs.add(job)
+        self.execute_wo(job, False)
+      else:
+        lfs = coord.common.LFS()
+        lfs.rmdir(os.path.join(coord.common.SLAVE_META_PATH, job+coord.common.STARTED_TAG))
     
   def get_jobinfo(self, jobname):
     if self.jobmap.has_key(jobname):
@@ -288,7 +294,7 @@ class Slave(object):
     return sdir
     
   def runjob(self, jobname, inputs, outputs):
-#    print 'Run Job: ', jobname
+    print 'Run Job: ', jobname
     lfs = coord.common.LFS()
     elapse = -1
     ret = -1
@@ -318,8 +324,9 @@ class Slave(object):
         self.jobstats[jobname].update(elapse)
         
       # For use of dep wait
+      print '**', jobname
       self.milestone.add(jobname)
-      threading.Timer(coord.common.MILESTONE_INTERVAL, self.milestone.remove, jobname)
+#      threading.Timer(coord.common.MILESTONE_INTERVAL, self.milestone.remove, jobname)
     
   def execute_wo(self, jobname, check = True):
     if not self.isrunnable(jobname, check):

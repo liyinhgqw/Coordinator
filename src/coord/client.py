@@ -85,26 +85,39 @@ class Client(object):
     
     if host is None or host == '':
       return None
-    call_future = self._get_slave_rpc(host).call(func, jobname, *args, **kw)
-    return call_future.wait()
+    
+    try:
+      call_future = self._get_slave_rpc(host).call(func, jobname, *args, **kw)
+      ret = call_future.wait()
+    except:
+      time.sleep(3)
+      # reconnect
+      self.rpc_slave[host] = rpc.client.RPCClient(host, coord.common.SLAVE_PORT)
+      ret = self.call(func, jobname)
+    
+    return ret
   
   # support recovery
   def execute(self, jobname, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
 #      print 'exec'
-      self.call('execute', jobname, check_finished)
       if self.recovery:
         self.log_recovery(jobname)
+      self.call('execute', jobname, check_finished)
+      return True
+    return False
       
   # support recovery
   # diverse convenient execute funtion
   def execute_cond(self, jobname, cond, check_finished = True, *args, **kw):
     if not self.recovery or not self.check_recovery(jobname):
+      if self.recovery:
+        self.log_recovery(jobname)
       if cond(jobname, *args, **kw):
 #        print 'exec', jobname
         self.call('execute', jobname, check_finished)
-      if self.recovery:
-        self.log_recovery(jobname)
+      return True
+    return False
   
   # support recovery
   def execute_cond_wait(self, jobname, cond, check_finished = True, *args, **kw):
@@ -112,9 +125,11 @@ class Client(object):
       while not cond(jobname, *args, **kw):
         time.sleep(lfs = coord.common.LFS())
 #      print 'exec'
-      self.call('execute', jobname, check_finished)
       if self.recovery:
-        self.log_recovery(jobname)    
+        self.log_recovery(jobname)  
+      self.call('execute', jobname, check_finished)  
+      return True
+    return False
   
   # support recovery
   def execute_dep(self, jobname, depname, timeout = None, check_finished = True, *args, **kw):
@@ -124,14 +139,18 @@ class Client(object):
       while not self.call('is_milestone', depname):
         time.sleep(coord.common.RETRY_INTERVAL)
         timesum += coord.common.RETRY_INTERVAL
-        if timeout is not True and timesum > timeout:
+        if timeout is not None and timesum > timeout:
           isrun = False
+          print 'Client execute @', jobname
           break
 #      print 'exec'
       if isrun:
-        self.call('execute', jobname, check_finished)
-      if self.recovery:
-        self.log_recovery(jobname)      
+        if self.recovery:
+          self.log_recovery(jobname)   
+        print 'Client execute', jobname
+        self.call('execute', jobname, check_finished)  
+      return True
+    return False 
   
   def execute_period(self, jobname, interval=1.0, check_finished = True, *args, **kw):
     # do not check finished for the first round
@@ -147,14 +166,14 @@ class Client(object):
     t.start()
     
   def check_recovery(self, jobname):
-    if not self.recovery or self.recovered:
+    if not self.recovery:
+#      or self.recovered:
       return False
     try:
       if not self.cter.has_key(jobname):
-        cnt = self.db.Get(jobname)
-        self.cter[jobname] = cnt
+        self.cter[jobname] = int(self.db.Get(jobname))
       if self.cter.has_key(jobname) and self.cter[jobname] > 0:
-        --self.cter[jobname]
+        self.cter[jobname] = self.cter[jobname] - 1
         return True
       else:
         return False
@@ -163,20 +182,24 @@ class Client(object):
       
       
   def log_recovery(self, jobname):
-    self.recovered = True
-    counter = self.db.Get(jobname)
+#    self.recovered = True
+    try:
+      counter = int(self.db.Get(jobname))
+    except:
+      counter = 0
     counter += 1
-    self.db.Put(jobname, counter)
+    self.db.Put(jobname, str(counter))
     
   def begin_checkblock(self, name):
     self.db = leveldb.LevelDB(name + '_recovery.db')
     self.recovery = True
-    self.recovered = False
+#    self.recovered = False
     self.cter = {}
     
   def end_checkblock(self, name):
-    if os.path.exists(name + '.db'):
-      os.rmdir(name + '.db')
+    lfs = coord.common.LFS()
+    if lfs.exists(name + '_recovery.db'):
+      lfs.rm_rf(name + '_recovery.db')
       
     
 if __name__ == '__main__':

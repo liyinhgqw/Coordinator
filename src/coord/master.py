@@ -81,7 +81,7 @@ class Master(object):
         jobinfo = unpickle(jobinfo_pickled)
 #        print jobinfo, '%'
         slavehost = jobinfo['Host']
-        if jobinfo['Dynamic'] != '' or slavehost.startswith('CPU') or slavehost.startswith('MEM'):
+        if jobinfo.has_key('Dynamic') and jobinfo['Dynamic'] != '' or slavehost.startswith('CPU') or slavehost.startswith('MEM'):
           for slave_rpc in self.master.rpc_client.itervalues():
             slave_rpc.register_job(jobname, jobinfo)
         else:
