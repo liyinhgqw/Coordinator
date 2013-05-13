@@ -7,12 +7,14 @@ import os
 import time
 import coord.common
 import coord.slave
+import rpc.client
 import copy
 from optparse import OptionParser
 
 # TODO: tmp link
 
 # input and output has two functions: tag for indirs & provide paths for both indirs and outdirs
+# run on slaves
 #
 # Always include the following template in your defined job
 #
@@ -79,7 +81,7 @@ from optparse import OptionParser
 MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [ -t <runtime>]"
 
 class JobTool(object):
-  def __init__(self, jobname, indirs, outdirs, runtime=1.0):
+  def __init__(self, lockserver, jobname, indirs, outdirs, runtime=1.0):
     self.jobname = jobname
     if indirs is None or indirs == '':
       self.inputs = {}
@@ -99,7 +101,26 @@ class JobTool(object):
     self.runtime = runtime
     
     self.tmpdir = []
+    
+    self.rpc_client = rpc.client.RPCClient(lockserver, coord.common.LOCKSERVER_PORT)
       
+      
+  def acquire_lock(self, lock):
+#    print '$ acquire', lock, self.jobname
+    while 1:
+      ret = self.rpc_client.acquire_lock(lock, timeout=10).wait()
+      if ret:
+        break
+      time.sleep(0.1)
+      
+  def release_lock(self, lock):
+#    print '$ release', lock, self.jobname
+    while 1:
+      ret = self.rpc_client.release_lock(lock, timeout=10).wait()
+      if ret:
+        break
+      time.sleep(0.1)
+    
   def deserialize(self, dirliststr):
     dirs = {}
     dirstrlist = dirliststr.split(',')
@@ -153,27 +174,44 @@ class JobTool(object):
         
   def pre_run(self, segcheck=True):
     # Tag for decide buffered seg num and make schedule decision
+    self.acquire_lock("lock")
+#    print 'acquired @', self.jobname
+    self.segments = []
+    
     for ipt in self.inputs.values():
+      
+      
       if ipt.mode == 1:
         nextseg = self.next_unfinished_seg(ipt.fs, ipt.path)
         if segcheck and nextseg is None:
+          self.release_lock("lock")
+#          print 'released @', self.jobname
           exit(1)
         self.tag_started(ipt.fs, nextseg)
 #        print 'input seg (STARTED)=', nextseg
         self.indirs[ipt.alias].path = [nextseg]    # change to seg path
+        self.segments.append((ipt.fs, nextseg))
       elif ipt.mode == 2:
         segs = self.unfinished_seg(ipt.fs, ipt.path)
         if segcheck and len(segs) <= 0:
+          self.release_lock("lock")
+#          print 'released @', self.jobname
           exit(1)
         for seg in segs:
           self.tag_started(ipt.fs, seg)
+          self.segments.append((ipt.fs, seg))
 #        print 'input seg (STARTED)=', segs
         self.indirs[ipt.alias].path = segs    # change to seg path
+        
+    
         
     for opt in self.outputs.values():
       if opt.mode == 1:
         nextseg = self.next_seg(opt.fs, opt.path)
         self.outdirs[opt.alias].path = [nextseg]    # change to seg path
+        
+    self.release_lock("lock")
+#    print 'released @', self.jobname
     return True
       
   def post_run(self, segcheck=True):
@@ -187,20 +225,11 @@ class JobTool(object):
       
     self.tmpdir = []
     
-    # Tag for decide next seg to process
-    for ipt in self.inputs.values():
-      if ipt.mode == 1:
-        nextseg = self.next_unfinished_seg(ipt.fs, ipt.path)
-        self.tag_finished(ipt.fs, nextseg)
-#        print 'input seg (FINISHED)=', nextseg
-      elif ipt.mode == 2:
-        segs = self.unfinished_seg(ipt.fs, ipt.path)
-        if segcheck and len(segs) <= 0:
-          exit(1)
-        for seg in segs:
-          self.tag_finished(ipt.fs, seg)
-#        print 'input seg (FINISHED)=', segs
-
+    self.acquire_lock("lock")
+    for seg in self.segments:
+      self.tag_finished(seg[0], seg[1])
+    self.release_lock("lock")
+    
   def runjob(self, segcheck = True):
     self.pre_run(segcheck)
     self.run()

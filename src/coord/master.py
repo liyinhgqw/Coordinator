@@ -11,12 +11,32 @@ import rpc.server
 import rpc.client
 from rpc.common import pickle, unpickle, RemoteException
 import leveldb
+from threading import Lock
 
+class PLock(object):
+  def __init__(self, path):
+    self.lock = Lock()
+    self.path = path
+  
+  def acquire(self, blocking = True):
+    return self.lock.acquire(blocking)
+    
+  def release(self):
+    self.lock.release()
+    
+  def __repr__(self, *args, **kwargs):
+    return self.path
+  
+  def __str__(self, *args, **kwargs):
+    return self.path
+    
 class Master(object):
   class MyHandler(object):
     def __init__(self, master):
       self.master = master
       self.jobinfoDB = self.master.db
+      self.lockmap = {}
+      self.lock = Lock()
       
     def do_something(self, arg1, arg2):
       return int(arg1) + int(arg2)
@@ -88,6 +108,20 @@ class Master(object):
       except KeyError:
         handle.done(False)
       
+    def acquire_lock(self, handle, lockpath):
+      with self.lock:
+        if not self.lockmap.has_key(lockpath):
+          self.lockmap[lockpath] = PLock(lockpath)
+        lock = self.lockmap[lockpath]
+      handle.done(lock.acquire(False))
+          
+    def release_lock(self, handle, lockpath):
+      with self.lock:
+        if not self.lockmap.has_key(lockpath):
+          print 'lock does not exist.'
+        lock = self.lockmap[lockpath]
+      lock.release()
+      handle.done(True)
     
   def __init__(self, port):
     self.logger = logging.getLogger("Master")

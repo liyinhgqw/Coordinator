@@ -55,6 +55,14 @@ MSG_USAGE = "usage: %prog [ -n <jobname>] [ -i <input dir>] [ -o <output dir>] [
 if __name__ == '__main__':
   optParser = OptionParser(MSG_USAGE)
   
+  optParser.add_option("-l",
+                       "--lockserver",
+                       action="store",
+                       type="string",
+                       dest="lockserver",
+                       help="Set Lock Server."
+                       )
+  
   optParser.add_option("-n",
                        "--name",
                        action="store",
@@ -95,5 +103,5 @@ if __name__ == '__main__':
   assert options.jobname is not None
   
   # only include dirs that need tags
-  job = RankSelect(options.jobname, options.indir, options.outdir, options.runtime)
+  job = RankSelect(options.lockserver, options.jobname, options.indir, options.outdir, options.runtime)
   job.runjob(False)

@@ -12,6 +12,7 @@ from hdfs.hfile import Hfile
 from hdfs.hfilesystem import Hfilesystem
 
 MASTER_PORT = 9999
+LOCKSERVER_PORT = MASTER_PORT
 SLAVE_PORT = MASTER_PORT + 1
 
 FINISHED_TAG = '_FINISHED'

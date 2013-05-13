@@ -59,5 +59,5 @@ if __name__ == '__main__':
   CHECK = True
   
   if not CHECK or check_success():
-    adgenerator = AdGenerator("AdGenerator", None, None)
+    adgenerator = AdGenerator('10.0.2.15', "AdGenerator", None, None)
     adgenerator.runjob()

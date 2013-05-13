@@ -219,6 +219,7 @@ class Slave(object):
     self.logger.setLevel(logging.DEBUG)
     self._port = port + 1  # slave server listen the port+1
     self.rpc_server = rpc.server.RPCServer(coord.common.localhost(), self._port, handler=self.MyHandler(self))
+    self.master_host = host
     self.rpc_client = rpc.client.RPCClient(host, port)
     self.jobmap = {}
     self.runningjobs = Set()
@@ -295,7 +296,7 @@ class Slave(object):
       st_time = coord.common.curtime()
 #      print self.serialize(inputs)
 #      print self.serialize(outputs)
-      cmd = self.jobmap[jobname].command + " -n " + jobname + " -i '" + self.serialize(inputs) + "' -o '" + self.serialize(outputs) + "'"
+      cmd = self.jobmap[jobname].command + " -l " + self.master_host  + " -n " + jobname + " -i '" + self.serialize(inputs) + "' -o '" + self.serialize(outputs) + "'"
 #      print cmd
       ret = os.system(cmd)
       elapse = coord.common.curtime() - st_time
